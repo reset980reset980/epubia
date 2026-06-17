@@ -19,7 +19,14 @@
   let dark = localStorage.getItem(themeKey) === "dark";
   let drag = null;
 
+  function isFocusMode() {
+    return document.body.classList.contains("reader-focus-mode");
+  }
+
   function spreadSize() {
+    if (isFocusMode() && window.matchMedia("(orientation: landscape) and (max-height: 700px)").matches) {
+      return 1;
+    }
     return window.matchMedia("(max-width: 860px)").matches ? 1 : 2;
   }
 
@@ -192,7 +199,7 @@
     render();
   });
   focus.addEventListener("click", async () => {
-    const shouldFocus = !document.body.classList.contains("reader-focus-mode");
+    const shouldFocus = !isFocusMode();
     setFocusMode(shouldFocus);
     try {
       if (shouldFocus && !document.fullscreenElement) {

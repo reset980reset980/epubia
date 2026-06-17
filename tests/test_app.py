@@ -3,6 +3,14 @@ from io import BytesIO
 import app as app_module
 
 
+def test_split_paragraph_for_pages_limits_long_sentence_chunks():
+    long_sentence = "가" * 760
+    chunks = app_module.split_paragraph_for_pages(long_sentence, max_chars=300)
+
+    assert len(chunks) == 3
+    assert all(len(chunk) <= 300 for chunk in chunks)
+
+
 def test_publish_accepts_korean_pdf_filename_and_reader(monkeypatch, tmp_path):
     monkeypatch.setattr(app_module, "BOOK_DIR", tmp_path / "books")
     monkeypatch.setattr(app_module, "UPLOAD_DIR", tmp_path / "uploads")

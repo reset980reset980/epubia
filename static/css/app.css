@@ -134,6 +134,7 @@ button.primary, .primary {
   word-break: keep-all;
 }
 .flip-stage {
+  position: relative;
   padding: 18px;
   min-height: auto;
   background:
@@ -202,14 +203,63 @@ body.reader-focus-mode .flip-reader {
   display: block;
 }
 body.reader-focus-mode .flip-stage {
-  min-height: 100vh;
+  min-height: 100dvh;
   border: 0;
   border-radius: 0;
   box-shadow: none;
-  padding: 12px;
+  padding: 0;
 }
 body.reader-focus-mode .book-viewport {
-  height: calc(100vh - 68px);
+  height: 100dvh;
+  padding: 12px;
+  border-radius: 0;
+}
+body.reader-focus-mode .reader-toolbar {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 8px);
+  right: calc(env(safe-area-inset-right, 0px) + 8px);
+  z-index: 20;
+  display: flex;
+  width: auto;
+  max-width: calc(100vw - 16px);
+  gap: 6px;
+  margin: 0;
+  padding: 6px;
+  border: 1px solid rgba(32, 41, 44, .16);
+  border-radius: 8px;
+  background: rgba(255, 253, 248, .78);
+  box-shadow: 0 12px 30px rgba(18, 27, 31, .16);
+  backdrop-filter: blur(12px);
+}
+body.reader-focus-mode .icon-button,
+body.reader-focus-mode .tool-button,
+body.reader-focus-mode .reader-status {
+  min-height: 34px;
+}
+body.reader-focus-mode .icon-button,
+body.reader-focus-mode .tool-button {
+  min-width: 34px;
+  padding: 0 8px;
+  font-size: 13px;
+}
+body.reader-focus-mode .icon-button {
+  font-size: 24px;
+}
+body.reader-focus-mode .tool-button.wide {
+  min-width: 54px;
+}
+body.reader-focus-mode .reader-status {
+  min-width: 78px;
+  padding: 0 8px;
+  gap: 5px;
+  background: rgba(255,253,248,.84);
+}
+body.reader-focus-mode .reader-status span {
+  display: none;
+}
+body.reader-focus-mode .book-page {
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 .book-viewport.dark {
   background:
@@ -413,4 +463,53 @@ body.reader-focus-mode .book-viewport {
   .book-page.left, .book-page.right { border-radius: 8px; }
   .book-page p { font-size: calc(16px * var(--reader-scale)); line-height: 1.82; }
   .book-row { display: grid; }
+}
+
+@media (orientation: landscape) and (max-height: 700px) {
+  body.reader-focus-mode .reader-toolbar {
+    top: calc(env(safe-area-inset-top, 0px) + 6px);
+    right: calc(env(safe-area-inset-right, 0px) + 6px);
+    gap: 4px;
+    padding: 4px;
+  }
+  body.reader-focus-mode .icon-button,
+  body.reader-focus-mode .tool-button,
+  body.reader-focus-mode .reader-status {
+    min-height: 30px;
+  }
+  body.reader-focus-mode .icon-button,
+  body.reader-focus-mode .tool-button {
+    min-width: 30px;
+    padding: 0 7px;
+    font-size: 12px;
+  }
+  body.reader-focus-mode .icon-button { font-size: 21px; }
+  body.reader-focus-mode .reader-status {
+    min-width: 64px;
+    padding: 0 6px;
+    font-size: 12px;
+  }
+  body.reader-focus-mode .book-viewport {
+    padding: 6px;
+  }
+  body.reader-focus-mode .book-page {
+    padding: 24px 24px 34px;
+  }
+  body.reader-focus-mode .page-running {
+    min-height: 16px;
+    margin-bottom: 8px;
+    font-size: 10px;
+  }
+  body.reader-focus-mode .book-page h2 {
+    font-size: 20px;
+    margin-bottom: 12px;
+  }
+  body.reader-focus-mode .book-page p {
+    font-size: calc(14px * var(--reader-scale));
+    line-height: 1.58;
+    margin-bottom: 8px;
+  }
+  body.reader-focus-mode .page-number {
+    bottom: 12px;
+  }
 }
