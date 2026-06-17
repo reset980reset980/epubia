@@ -177,7 +177,8 @@ def read_book(book_id: str):
         abort(404)
     text = source_path.read_text(encoding="utf-8")
     chapters = split_chapters(text)
-    return render_template("reader.html", book=manifest, chapters=chapters)
+    pages, chapter_starts = build_reader_pages(manifest, chapters)
+    return render_template("reader.html", book=manifest, chapters=chapters, pages=pages, chapter_starts=chapter_starts)
 
 
 @app.get("/download/<book_id>/<kind>")
@@ -243,6 +244,79 @@ def list_books() -> list[dict]:
         except Exception:
             continue
     return books[:30]
+
+
+def split_paragraph_for_pages(paragraph: str, max_chars: int = 520) -> list[str]:
+    paragraph = " ".join(paragraph.split())
+    if len(paragraph) <= max_chars:
+        return [paragraph]
+    sentences = [part.strip() for part in paragraph.replace("다. ", "다.\n").replace("요. ", "요.\n").splitlines()]
+    chunks: list[str] = []
+    current = ""
+    for sentence in sentences:
+        if not sentence:
+            continue
+        if current and len(current) + len(sentence) > max_chars:
+            chunks.append(current.strip())
+            current = ""
+        current = f"{current} {sentence}".strip()
+    if current:
+        chunks.append(current.strip())
+    if not chunks:
+        chunks = [paragraph[i:i + max_chars] for i in range(0, len(paragraph), max_chars)]
+    return chunks
+
+
+def build_reader_pages(book: dict, chapters) -> tuple[list[dict], list[dict]]:
+    pages = [
+        {
+            "kind": "cover",
+            "title": book["title"],
+            "author": book["author"],
+            "meta": f"{book.get('chapter_count', 0)}장 · {book.get('created_at', '')}",
+            "paragraphs": [],
+            "chapter": 0,
+        }
+    ]
+    chapter_starts: list[dict] = []
+    target_chars = 860
+    for chapter_index, chapter in enumerate(chapters, start=1):
+        chapter_starts.append({"index": chapter_index, "title": chapter.title, "page": len(pages)})
+        page_paragraphs: list[str] = []
+        page_chars = 0
+        first_page = True
+        paragraphs = []
+        for raw in chapter.body.split("\n\n"):
+            raw = raw.strip()
+            if raw:
+                paragraphs.extend(split_paragraph_for_pages(raw))
+        for paragraph in paragraphs:
+            if page_paragraphs and page_chars + len(paragraph) > target_chars:
+                pages.append(
+                    {
+                        "kind": "chapter",
+                        "title": chapter.title if first_page else "",
+                        "runningTitle": chapter.title,
+                        "paragraphs": page_paragraphs,
+                        "chapter": chapter_index,
+                    }
+                )
+                first_page = False
+                page_paragraphs = []
+                page_chars = 0
+            page_paragraphs.append(paragraph)
+            page_chars += len(paragraph)
+        if page_paragraphs or first_page:
+            pages.append(
+                {
+                    "kind": "chapter",
+                    "title": chapter.title if first_page else "",
+                    "runningTitle": chapter.title,
+                    "paragraphs": page_paragraphs,
+                    "chapter": chapter_index,
+                }
+            )
+    return pages, chapter_starts
 
 
 if __name__ == "__main__":

@@ -1,35 +1,41 @@
 {% extends "base.html" %}
 {% block title %}{{ book.title }} 읽기 - 혜경 전자책 스튜디오{% endblock %}
 {% block content %}
-<section class="reader-shell">
-  <aside class="reader-toc">
-    <p class="eyebrow">웹 리더</p>
+<section class="flip-reader" data-book-id="{{ book.book_id }}">
+  <aside class="reader-toc flip-toc">
+    <p class="eyebrow">책장 리더</p>
     <h2>{{ book.title }}</h2>
     <p>{{ book.author }} · {{ book.chapter_count }}장</p>
     <nav class="chapter-nav">
-      {% for chapter in chapters %}
-      <a href="#chapter-{{ loop.index }}">{{ loop.index }}. {{ chapter.title }}</a>
+      {% for chapter in chapter_starts %}
+      <button type="button" data-page="{{ chapter.page }}">{{ chapter.index }}. {{ chapter.title }}</button>
       {% endfor %}
     </nav>
-    <a class="reader-back" href="{{ url_for('book_detail', book_id=book.book_id) }}">출판 결과로 돌아가기</a>
+    <a class="reader-back" href="{{ url_for('book_detail', book_id=book.book_id) }}">출판 결과</a>
   </aside>
 
-  <article class="reader-book">
-    <header class="reader-cover">
-      <span>혜경 전자책 스튜디오</span>
-      <h1>{{ book.title }}</h1>
-      <p>{{ book.author }}</p>
-    </header>
-    {% for chapter in chapters %}
-    <section class="reader-chapter" id="chapter-{{ loop.index }}">
-      <h2>{{ chapter.title }}</h2>
-      {% for paragraph in chapter.body.split('\n\n') %}
-        {% if paragraph.strip() %}
-        <p>{{ paragraph.strip().replace('\n', ' ') }}</p>
-        {% endif %}
-      {% endfor %}
-    </section>
-    {% endfor %}
+  <article class="flip-stage" aria-label="{{ book.title }} 웹 리더">
+    <div class="reader-toolbar">
+      <button type="button" class="icon-button" id="readerPrev" aria-label="이전 페이지">‹</button>
+      <div class="reader-status">
+        <strong id="readerPageLabel">1</strong>
+        <span id="readerProgress">0%</span>
+      </div>
+      <button type="button" class="icon-button" id="readerNext" aria-label="다음 페이지">›</button>
+      <button type="button" class="tool-button" id="readerSmaller">가-</button>
+      <button type="button" class="tool-button" id="readerLarger">가+</button>
+      <button type="button" class="tool-button" id="readerTheme">종이</button>
+    </div>
+
+    <div class="book-viewport" id="bookViewport">
+      <div class="book-spread" id="bookSpread"></div>
+    </div>
   </article>
 </section>
+
+<script>
+  window.READER_BOOK_ID = {{ book.book_id|tojson }};
+  window.READER_PAGES = {{ pages|tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/flipbook.js') }}"></script>
 {% endblock %}

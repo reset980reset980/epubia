@@ -53,4 +53,5 @@ def test_publish_accepts_korean_pdf_filename_and_reader(monkeypatch, tmp_path):
         reader = client.get("/books/test-book/read")
         assert reader.status_code == 200
         assert "웹 리더 테스트".encode() in reader.data
-        assert "본문입니다".encode() in reader.data
+        assert b"book-spread" in reader.data
+        assert b"READER_PAGES" in reader.data
