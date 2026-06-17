@@ -246,7 +246,7 @@ def list_books() -> list[dict]:
     return books[:30]
 
 
-def split_paragraph_for_pages(paragraph: str, max_chars: int = 520) -> list[str]:
+def split_paragraph_for_pages(paragraph: str, max_chars: int = 420) -> list[str]:
     paragraph = " ".join(paragraph.split())
     if len(paragraph) <= max_chars:
         return [paragraph]
@@ -279,7 +279,7 @@ def build_reader_pages(book: dict, chapters) -> tuple[list[dict], list[dict]]:
         }
     ]
     chapter_starts: list[dict] = []
-    target_chars = 860
+    target_chars = 680
     for chapter_index, chapter in enumerate(chapters, start=1):
         chapter_starts.append({"index": chapter_index, "title": chapter.title, "page": len(pages)})
         page_paragraphs: list[str] = []

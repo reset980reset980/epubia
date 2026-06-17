@@ -16,6 +16,7 @@
   let pageIndex = Number(localStorage.getItem(storageKey) || 0);
   let fontScale = Number(localStorage.getItem(fontKey) || 1);
   let dark = localStorage.getItem(themeKey) === "dark";
+  let drag = null;
 
   function spreadSize() {
     return window.matchMedia("(max-width: 860px)").matches ? 1 : 2;
@@ -84,7 +85,9 @@
     pageIndex = normalizeIndex(pageIndex);
     viewport.classList.toggle("dark", dark);
     spread.style.setProperty("--reader-scale", String(fontScale));
-    spread.classList.remove("turn-forward", "turn-back");
+    spread.style.setProperty("--drag-x", "0");
+    spread.style.setProperty("--drag-progress", "0");
+    spread.classList.remove("turn-forward", "turn-back", "dragging", "drag-left", "drag-right");
     if (direction) {
       spread.classList.add(direction === "next" ? "turn-forward" : "turn-back");
     }
@@ -114,6 +117,58 @@
     render(delta > 0 ? "next" : "prev");
   }
 
+  function dragProgress(deltaX) {
+    const width = Math.max(1, viewport.getBoundingClientRect().width);
+    return Math.max(-1, Math.min(1, deltaX / width));
+  }
+
+  function beginDrag(event) {
+    if (!pages.length || event.button > 0) return;
+    drag = {
+      id: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      active: false,
+    };
+    viewport.setPointerCapture(event.pointerId);
+  }
+
+  function updateDrag(event) {
+    if (!drag || drag.id !== event.pointerId) return;
+    const deltaX = event.clientX - drag.x;
+    const deltaY = event.clientY - drag.y;
+    if (!drag.active && Math.abs(deltaX) < 8) return;
+    if (!drag.active && Math.abs(deltaY) > Math.abs(deltaX) * 1.25) {
+      drag = null;
+      return;
+    }
+
+    drag.active = true;
+    event.preventDefault();
+    const progressValue = dragProgress(deltaX);
+    spread.classList.add("dragging");
+    spread.classList.toggle("drag-left", deltaX < 0);
+    spread.classList.toggle("drag-right", deltaX > 0);
+    spread.style.setProperty("--drag-x", String(deltaX));
+    spread.style.setProperty("--drag-progress", String(progressValue));
+    spread.style.setProperty("--drag-abs", String(Math.abs(progressValue)));
+  }
+
+  function endDrag(event) {
+    if (!drag || drag.id !== event.pointerId) return;
+    const deltaX = event.clientX - drag.x;
+    const active = drag.active;
+    drag = null;
+    spread.classList.remove("dragging", "drag-left", "drag-right");
+    spread.style.setProperty("--drag-x", "0");
+    spread.style.setProperty("--drag-progress", "0");
+    spread.style.setProperty("--drag-abs", "0");
+    if (!active) return;
+    const threshold = Math.min(140, Math.max(70, viewport.getBoundingClientRect().width * 0.16));
+    if (deltaX <= -threshold) move(1);
+    if (deltaX >= threshold) move(-1);
+  }
+
   prevButton.addEventListener("click", () => move(-1));
   nextButton.addEventListener("click", () => move(1));
   smaller.addEventListener("click", () => {
@@ -139,6 +194,10 @@
     if (event.key === "ArrowRight" || event.key === "PageDown") move(1);
     if (event.key === "ArrowLeft" || event.key === "PageUp") move(-1);
   });
+  viewport.addEventListener("pointerdown", beginDrag);
+  viewport.addEventListener("pointermove", updateDrag);
+  viewport.addEventListener("pointerup", endDrag);
+  viewport.addEventListener("pointercancel", endDrag);
   window.addEventListener("resize", () => render());
   theme.textContent = dark ? "밤" : "종이";
   render();

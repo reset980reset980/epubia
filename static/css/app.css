@@ -135,7 +135,7 @@ button.primary, .primary {
 }
 .flip-stage {
   padding: 18px;
-  min-height: 720px;
+  min-height: auto;
   background:
     linear-gradient(135deg, rgba(255,255,255,.72), rgba(255,255,255,.2)),
     #ebe5dc;
@@ -171,12 +171,15 @@ button.primary, .primary {
 }
 .reader-status span { color: var(--muted); font-size: 13px; }
 .book-viewport {
-  min-height: 640px;
+  min-height: 0;
+  height: clamp(500px, calc(100vh - 230px), 640px);
   display: grid;
   place-items: center;
   perspective: 1800px;
   padding: 20px;
   border-radius: 8px;
+  touch-action: pan-y;
+  user-select: none;
   background:
     radial-gradient(circle at 50% 30%, rgba(255,255,255,.7), transparent 46%),
     linear-gradient(90deg, #d5cab9, #eee7db 22%, #eee7db 78%, #cbbfae);
@@ -188,18 +191,29 @@ button.primary, .primary {
 }
 .book-spread {
   --reader-scale: 1;
+  --drag-x: 0;
+  --drag-progress: 0;
+  --drag-abs: 0;
   width: min(100%, 860px);
-  min-height: 570px;
+  height: 100%;
+  min-height: 0;
   display: grid;
   grid-template-columns: 1fr 1fr;
   filter: drop-shadow(0 22px 34px rgba(23, 33, 38, .18));
   transform-style: preserve-3d;
+  transition: transform .52s cubic-bezier(.18,.84,.24,1), filter .52s cubic-bezier(.18,.84,.24,1);
 }
-.book-spread.turn-forward { animation: turnForward .28s ease; }
-.book-spread.turn-back { animation: turnBack .28s ease; }
+.book-spread.dragging {
+  transform: translateX(calc(var(--drag-x) * .12px)) rotateY(calc(var(--drag-progress) * -9deg));
+  filter: drop-shadow(0 28px 42px rgba(23, 33, 38, .22));
+  transition: none;
+}
+.book-spread.turn-forward { animation: turnForward .62s cubic-bezier(.16,.78,.21,1); }
+.book-spread.turn-back { animation: turnBack .62s cubic-bezier(.16,.78,.21,1); }
 .book-page {
   position: relative;
-  min-height: 570px;
+  height: 100%;
+  min-height: 0;
   padding: 42px 38px 48px;
   overflow: hidden;
   background:
@@ -208,21 +222,61 @@ button.primary, .primary {
     #fffaf0;
   color: #172126;
   border: 1px solid #d4cabd;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  transition: transform .52s cubic-bezier(.18,.84,.24,1), box-shadow .52s cubic-bezier(.18,.84,.24,1);
+}
+.book-page::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .45s ease;
 }
 .book-page.left {
   border-radius: 8px 0 0 8px;
   box-shadow: inset -18px 0 24px rgba(62, 47, 30, .08);
 }
+.book-page.left::after {
+  background: linear-gradient(90deg, transparent 70%, rgba(45, 31, 16, .14));
+}
 .book-page.right {
   border-radius: 0 8px 8px 0;
   box-shadow: inset 18px 0 24px rgba(62, 47, 30, .08);
+}
+.book-page.right::after {
+  background: linear-gradient(90deg, rgba(45, 31, 16, .16), transparent 32%);
+}
+.book-spread.drag-left .book-page.right {
+  transform: rotateY(calc(var(--drag-progress) * 34deg)) translateX(calc(var(--drag-x) * .08px));
+  transform-origin: left center;
+  box-shadow: inset 22px 0 28px rgba(62, 47, 30, .16), -14px 0 26px rgba(23, 33, 38, .12);
+}
+.book-spread.drag-right .book-page.left {
+  transform: rotateY(calc(var(--drag-progress) * 34deg)) translateX(calc(var(--drag-x) * .08px));
+  transform-origin: right center;
+  box-shadow: inset -22px 0 28px rgba(62, 47, 30, .16), 14px 0 26px rgba(23, 33, 38, .12);
+}
+.book-spread.dragging .book-page::after { opacity: calc(var(--drag-abs) * .9); }
+.book-spread.turn-forward .book-page.right {
+  transform-origin: left center;
+  animation: pageCurlForward .62s cubic-bezier(.16,.78,.21,1);
+}
+.book-spread.turn-back .book-page.left {
+  transform-origin: right center;
+  animation: pageCurlBack .62s cubic-bezier(.16,.78,.21,1);
+}
+.book-spread.turn-forward .book-page.right::after,
+.book-spread.turn-back .book-page.left::after {
+  animation: pageShadow .62s ease;
 }
 .book-page.cover {
   background: #172126;
   color: #fff;
 }
 .book-cover-page {
-  min-height: 476px;
+  min-height: 100%;
   display: grid;
   place-items: center;
   align-content: center;
@@ -271,14 +325,32 @@ button.primary, .primary {
 
 @keyframes turnForward {
   0% { transform: rotateY(0deg) translateX(0); opacity: 1; }
-  45% { transform: rotateY(-7deg) translateX(-8px); opacity: .82; }
+  42% { transform: rotateY(-5deg) translateX(-10px); opacity: .9; }
   100% { transform: rotateY(0deg) translateX(0); opacity: 1; }
 }
 
 @keyframes turnBack {
   0% { transform: rotateY(0deg) translateX(0); opacity: 1; }
-  45% { transform: rotateY(7deg) translateX(8px); opacity: .82; }
+  42% { transform: rotateY(5deg) translateX(10px); opacity: .9; }
   100% { transform: rotateY(0deg) translateX(0); opacity: 1; }
+}
+
+@keyframes pageCurlForward {
+  0% { transform: rotateY(0deg) translateX(0) skewY(0deg); }
+  46% { transform: rotateY(-28deg) translateX(-14px) skewY(.8deg); }
+  100% { transform: rotateY(0deg) translateX(0) skewY(0deg); }
+}
+
+@keyframes pageCurlBack {
+  0% { transform: rotateY(0deg) translateX(0) skewY(0deg); }
+  46% { transform: rotateY(28deg) translateX(14px) skewY(-.8deg); }
+  100% { transform: rotateY(0deg) translateX(0) skewY(0deg); }
+}
+
+@keyframes pageShadow {
+  0% { opacity: 0; }
+  45% { opacity: .85; }
+  100% { opacity: 0; }
 }
 .doc, .settings { padding: 28px; line-height: 1.75; }
 .doc h2 { margin-top: 26px; }
@@ -307,9 +379,9 @@ button.primary, .primary {
   .reader-chapter { padding: 36px 20px; }
   .reader-chapter p { font-size: 16px; line-height: 1.85; }
   .flip-stage { padding: 12px; min-height: auto; }
-  .book-viewport { min-height: 560px; padding: 10px; }
-  .book-spread { grid-template-columns: 1fr; min-height: 520px; }
-  .book-page { min-height: 520px; padding: 34px 26px 44px; border-radius: 8px; }
+  .book-viewport { height: clamp(460px, calc(100vh - 250px), 560px); min-height: 0; padding: 10px; }
+  .book-spread { grid-template-columns: 1fr; height: 100%; min-height: 0; }
+  .book-page { height: 100%; min-height: 0; padding: 34px 26px 44px; border-radius: 8px; }
   .book-page.left, .book-page.right { border-radius: 8px; }
   .book-page p { font-size: calc(16px * var(--reader-scale)); line-height: 1.82; }
   .book-row { display: grid; }
