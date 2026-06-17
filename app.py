@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from flask import Flask, abort, flash, redirect, render_template, request, send_file, session, url_for
 from werkzeug.utils import secure_filename
 
-from ebook_pipeline import BookMeta, build_book, safe_filename, split_chapters
+from ebook_pipeline import BookMeta, build_book, display_title_from_filename, safe_filename, split_chapters
 
 
 ROOT = Path(__file__).resolve().parent
@@ -141,7 +141,7 @@ def publish():
     source.save(upload_path)
 
     meta = BookMeta(
-        title=request.form.get("title", "").strip(),
+        title=request.form.get("title", "").strip() or display_title_from_filename(Path(original_filename)),
         subtitle=request.form.get("subtitle", "").strip(),
         author=request.form.get("author", "").strip() or "기혜경",
         publisher=request.form.get("publisher", "").strip() or "혜경 전자책 스튜디오",

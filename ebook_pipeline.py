@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Iterable
 
 from pypdf import PdfReader
+from pypdf.errors import PdfReadError, PdfStreamError
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.pagesizes import A5
@@ -23,6 +24,13 @@ from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer
 
 
 SUPPORTED_EXTENSIONS = {".pdf", ".txt", ".md", ".markdown"}
+PDF_TEXT_CORRECTIONS = (
+    ("개인정보호", "개인정보보호"),
+    ("정보호팀", "정보보호팀"),
+    ("정보호 업무", "정보보호 업무"),
+    ("정보호시스템", "정보보호시스템"),
+    ("정보안", "정보보안"),
+)
 DEFAULT_FONT_CANDIDATES = [
     "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
     "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
@@ -66,6 +74,10 @@ def safe_filename(value: str, fallback: str = "book") -> str:
     return (cleaned[:80] or fallback).strip("_") or fallback
 
 
+def display_title_from_filename(path: Path) -> str:
+    return safe_filename(path.stem).replace("_", " ")
+
+
 def validate_source(path: Path) -> None:
     if path.suffix.lower() not in SUPPORTED_EXTENSIONS:
         allowed = ", ".join(sorted(SUPPORTED_EXTENSIONS))
@@ -84,12 +96,15 @@ def extract_text(source_path: Path) -> str:
 
 def extract_pdf_text(source_path: Path) -> str:
     chunks: list[str] = []
-    reader = PdfReader(str(source_path))
-    for page_index, page in enumerate(reader.pages, start=1):
-        text = (page.extract_text() or "").strip()
-        if text:
-            chunks.append(f"\n\n[페이지 {page_index}]\n{text}")
-    extracted = normalize_text("\n".join(chunks))
+    try:
+        reader = PdfReader(str(source_path))
+        for page_index, page in enumerate(reader.pages, start=1):
+            text = (page.extract_text() or "").strip()
+            if text:
+                chunks.append(f"\n\n[페이지 {page_index}]\n{text}")
+    except (PdfReadError, PdfStreamError) as exc:
+        raise ValueError("PDF 파일 구조가 손상되었거나 업로드가 완전히 끝나지 않은 파일입니다. 원본 PDF를 다시 저장한 뒤 업로드해주세요.") from exc
+    extracted = clean_extracted_pdf_text(normalize_text("\n".join(chunks)))
     if not extracted:
         raise ValueError("PDF에서 텍스트를 추출하지 못했습니다. 스캔 이미지 PDF는 OCR 처리가 필요합니다.")
     return extracted
@@ -112,10 +127,91 @@ def normalize_text(text: str) -> str:
     return text.strip()
 
 
+def clean_extracted_pdf_text(text: str) -> str:
+    cleaned_lines: list[str] = []
+    previous = ""
+    seen_lines: set[str] = set()
+    for raw_line in text.splitlines():
+        line = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", "", raw_line).strip()
+        if not line:
+            if cleaned_lines and cleaned_lines[-1]:
+                cleaned_lines.append("")
+            continue
+        if re.fullmatch(r"\[페이지\s+\d+\]", line):
+            continue
+        if is_pdf_navigation_noise(line):
+            continue
+        if line.count("�") >= max(2, len(line) // 5):
+            line = line.replace("�", "")
+        line = re.sub(r"�+", "", line)
+        noisy_glyphs = has_repeated_pdf_glyph_noise(line)
+        if noisy_glyphs:
+            line = collapse_repeated_pdf_glyphs(line)
+            line = apply_pdf_text_corrections(line)
+        line = re.sub(r"\s{2,}", " ", line).strip()
+        comparable = re.sub(r"\s+", " ", line)
+        if not line or line == previous or (len(comparable) > 8 and comparable in seen_lines):
+            continue
+        cleaned_lines.append(line)
+        previous = line
+        if len(comparable) > 8:
+            seen_lines.add(comparable)
+    return normalize_text("\n".join(cleaned_lines))
+
+
+def is_pdf_navigation_noise(line: str) -> bool:
+    compact = re.sub(r"\s+", "", line)
+    return ("◀" in compact or "▶" in compact) and len(compact) <= 24
+
+
+def has_repeated_pdf_glyph_noise(line: str) -> bool:
+    compact = re.sub(r"\s+", "", line)
+    if len(compact) < 8:
+        return False
+    duplicate_count = sum(
+        1
+        for left, right in zip(compact, compact[1:])
+        if left == right and re.match(r"[가-힣0-9:.,ㆍ·\-]", left)
+    )
+    return duplicate_count / len(compact) >= 0.18
+
+
+def collapse_repeated_pdf_glyphs(line: str) -> str:
+    line = re.sub(r"([가-힣0-9:.,ㆍ·\-])\1+", r"\1", line)
+    line = re.sub(r"([ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ])\1+", r"\1", line)
+    return line
+
+
+def apply_pdf_text_corrections(line: str) -> str:
+    for broken, fixed in PDF_TEXT_CORRECTIONS:
+        line = line.replace(broken, fixed)
+    line = re.sub(r"(?<!D)DoS", "DDoS", line)
+    return line
+
+
+def looks_like_broken_title(value: str) -> bool:
+    if not value:
+        return True
+    if "�" in value:
+        return True
+    if "◀" in value or "▶" in value:
+        return True
+    if re.match(r"^[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]{1,4}\s*[.]", value):
+        return True
+    if re.match(r"^\d{1,3}\s+", value) or re.match(r"^[가-힣]\.\s+", value):
+        return True
+    if value.startswith(("○", "w ", "※")):
+        return True
+    if value.startswith(("담당자:", "담당자：")):
+        return True
+    control_count = sum(1 for char in value if ord(char) < 32)
+    return control_count > 0 or len(re.sub(r"[^가-힣A-Za-z0-9]", "", value)) < 2
+
+
 def infer_title(text: str, fallback: str) -> str:
     for line in text.splitlines():
         candidate = line.strip(" #\t")
-        if 2 <= len(candidate) <= 50 and not candidate.startswith("[페이지"):
+        if 2 <= len(candidate) <= 50 and not candidate.startswith("[페이지") and not looks_like_broken_title(candidate):
             return candidate
     return fallback
 
@@ -147,6 +243,11 @@ def split_markdown_chapters(text: str) -> list[Chapter]:
 
 
 def split_heading_chapters(text: str) -> list[Chapter]:
+    roman_pattern = re.compile(r"(?m)^([ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]{1,4}\.\s+.{2,40})\s*$")
+    roman_matches = list(roman_pattern.finditer(text))
+    if len(roman_matches) >= 2:
+        return chapters_from_heading_matches(text, roman_matches)
+
     pattern = re.compile(
         r"(?m)^(제\s*\d+\s*[장절부편].{0,40}|[0-9]{1,2}\.\s+.{2,40}|Chapter\s+\d+.{0,40}|Prologue|Epilogue)\s*$",
         re.IGNORECASE,
@@ -154,6 +255,10 @@ def split_heading_chapters(text: str) -> list[Chapter]:
     matches = list(pattern.finditer(text))
     if len(matches) < 2:
         return []
+    return chapters_from_heading_matches(text, matches)
+
+
+def chapters_from_heading_matches(text: str, matches: list[re.Match[str]]) -> list[Chapter]:
     chapters: list[Chapter] = []
     preface = text[: matches[0].start()].strip()
     if preface:
@@ -396,7 +501,11 @@ def build_book(source_path: Path, meta: BookMeta, output_root: Path) -> BuildRes
     try:
         extracted_text = extract_text(source_path)
         if not meta.title:
-            meta.title = infer_title(extracted_text, source_path.stem)
+            meta.title = (
+                display_title_from_filename(source_path)
+                if source_path.suffix.lower() == ".pdf"
+                else infer_title(extracted_text, source_path.stem)
+            )
         if not meta.author:
             meta.author = "기혜경"
         chapters = split_chapters(extracted_text)

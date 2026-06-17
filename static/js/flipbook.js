@@ -10,6 +10,7 @@
   const smaller = document.getElementById("readerSmaller");
   const larger = document.getElementById("readerLarger");
   const theme = document.getElementById("readerTheme");
+  const focus = document.getElementById("readerFocus");
   const storageKey = `epubia:${bookId}:page`;
   const fontKey = `epubia:${bookId}:font`;
   const themeKey = `epubia:${bookId}:theme`;
@@ -117,6 +118,12 @@
     render(delta > 0 ? "next" : "prev");
   }
 
+  function setFocusMode(enabled) {
+    document.body.classList.toggle("reader-focus-mode", enabled);
+    if (focus) focus.textContent = enabled ? "나가기" : "전체 보기";
+    render();
+  }
+
   function dragProgress(deltaX) {
     const width = Math.max(1, viewport.getBoundingClientRect().width);
     return Math.max(-1, Math.min(1, deltaX / width));
@@ -183,6 +190,24 @@
     dark = !dark;
     theme.textContent = dark ? "밤" : "종이";
     render();
+  });
+  focus.addEventListener("click", async () => {
+    const shouldFocus = !document.body.classList.contains("reader-focus-mode");
+    setFocusMode(shouldFocus);
+    try {
+      if (shouldFocus && !document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      } else if (!shouldFocus && document.fullscreenElement) {
+        await document.exitFullscreen();
+      }
+    } catch (_) {
+      // Browser fullscreen can be denied; CSS focus mode still works.
+    }
+  });
+  document.addEventListener("fullscreenchange", () => {
+    if (!document.fullscreenElement) {
+      setFocusMode(false);
+    }
   });
   document.querySelectorAll(".chapter-nav button").forEach((button) => {
     button.addEventListener("click", () => {

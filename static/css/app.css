@@ -142,7 +142,7 @@ button.primary, .primary {
 }
 .reader-toolbar {
   display: grid;
-  grid-template-columns: 44px minmax(120px, 1fr) 44px 54px 54px 62px;
+  grid-template-columns: 44px minmax(120px, 1fr) 44px 54px 54px 62px 86px;
   gap: 8px;
   align-items: center;
   margin-bottom: 14px;
@@ -157,6 +157,7 @@ button.primary, .primary {
   font: inherit;
   font-weight: 800;
 }
+.tool-button.wide { min-width: 86px; }
 .icon-button { font-size: 30px; line-height: 1; }
 .icon-button:disabled { opacity: .35; cursor: not-allowed; }
 .reader-status {
@@ -183,6 +184,32 @@ button.primary, .primary {
   background:
     radial-gradient(circle at 50% 30%, rgba(255,255,255,.7), transparent 46%),
     linear-gradient(90deg, #d5cab9, #eee7db 22%, #eee7db 78%, #cbbfae);
+}
+body.reader-focus-mode {
+  overflow: hidden;
+  background: #1b2022;
+}
+body.reader-focus-mode .topbar,
+body.reader-focus-mode .footer,
+body.reader-focus-mode .flip-toc {
+  display: none;
+}
+body.reader-focus-mode .page {
+  max-width: none;
+  padding: 0;
+}
+body.reader-focus-mode .flip-reader {
+  display: block;
+}
+body.reader-focus-mode .flip-stage {
+  min-height: 100vh;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 12px;
+}
+body.reader-focus-mode .book-viewport {
+  height: calc(100vh - 68px);
 }
 .book-viewport.dark {
   background:
@@ -373,6 +400,7 @@ button.primary, .primary {
   .hero-grid, .workbench, .detail, .reader-shell, .flip-reader { grid-template-columns: 1fr; }
   .reader-toc { position: static; }
   .field-grid, .download-grid, .reader-toolbar { grid-template-columns: 1fr 1fr 1fr; }
+  .tool-button.wide { min-width: 0; }
   .reader-status { grid-column: 1 / -1; order: -1; }
   h1 { font-size: 27px; }
   .reader-cover h1 { font-size: 30px; }
