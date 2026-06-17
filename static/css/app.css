@@ -274,6 +274,11 @@ body.reader-focus-mode .book-page p {
   line-height: 1.66;
   margin-bottom: 9px;
 }
+@media (orientation: portrait) {
+  body.reader-focus-mode .book-viewport {
+    padding: calc(env(safe-area-inset-top, 0px) + 82px) 12px 12px;
+  }
+}
 .book-viewport.dark {
   background:
     radial-gradient(circle at 50% 30%, rgba(78, 86, 88, .5), transparent 46%),
