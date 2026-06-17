@@ -2,8 +2,17 @@
 # epubcheck GUI
 import wx
 import os
+import zipfile
 
 __program__ = 'epubpack'
+
+def safe_extract(zipf, dest):
+    dest = os.path.abspath(dest)
+    for member in zipf.infolist():
+        target = os.path.abspath(os.path.join(dest, member.filename))
+        if not target.startswith(dest + os.sep):
+            raise Exception("Unsafe zip path: %s" % member.filename)
+    zipf.extractall(dest)
 
 class FileDropTarget(wx.FileDropTarget):
     def __init__(self, obj):
@@ -15,10 +24,9 @@ class FileDropTarget(wx.FileDropTarget):
         # main body
         for filename in filenames:
             if os.path.exists(filename) and os.path.isfile(filename) and filename.endswith(".epub"):
-            	import zipfile
             	epubdir = os.path.splitext(filename)[0]
             	zipf = zipfile.ZipFile(filename, 'r')
-            	zipf.extractall(epubdir)
+            	safe_extract(zipf, epubdir)
                 self.obj.AppendText(u"Extracted to %s\n" %epubdir)
             elif os.path.exists(filename) and os.path.isdir(filename) and os.path.exists( os.path.join(filename, "mimetype") ):
                 from epubpack import epubpack

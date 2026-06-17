@@ -5,8 +5,8 @@ import os
 
 default_config = {
             'Scraper' : 'Aladin',
-            'DaumAPIKey': '9125fb6a1c2e7100009b4ad61d6089037386dba6',
-            'NaverAPIKey': '6da7207e79464e4c95937b235978d425',
+            'DaumAPIKey': os.environ.get('EPUBIA_DAUM_API_KEY', ''),
+            'NaverAPIKey': os.environ.get('EPUBIA_NAVER_API_KEY', ''),
             #'GenericCSS': 'generic.css',
             'TargetCSS': 'Default',
             'UseDestDir': False,

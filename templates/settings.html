@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}설정 - 혜경 전자책 스튜디오{% endblock %}
+{% block content %}
+<section class="settings">
+  <h1>설정</h1>
+  <dl>
+    <dt>버전</dt><dd>{{ app_version }}</dd>
+    <dt>허용 사용자</dt><dd>{{ allowed_users }}</dd>
+    <dt>최대 업로드</dt><dd>{{ upload_mb }}MB</dd>
+    <dt>생성 파일 위치</dt><dd>{{ book_dir }}</dd>
+    <dt>기반 아이디어</dt><dd><a href="{{ legacy_repo }}" target="_blank" rel="noreferrer">원본 epubia 프로젝트</a></dd>
+  </dl>
+</section>
+{% endblock %}
+

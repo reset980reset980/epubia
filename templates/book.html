@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{{ book.title }} - 혜경 전자책 스튜디오{% endblock %}
+{% block content %}
+<section class="detail">
+  <div>
+    <p class="eyebrow">출판 결과</p>
+    <h1>{{ book.title }}</h1>
+    <p class="lead">{{ book.author }} · {{ book.chapter_count }}장 · {{ book.created_at }}</p>
+  </div>
+  <div class="download-grid">
+    <a class="download epub" href="{{ url_for('download', book_id=book.book_id, kind='epub') }}">EPUB 다운로드</a>
+    <a class="download pdf" href="{{ url_for('download', book_id=book.book_id, kind='pdf') }}">PDF 다운로드</a>
+    <a class="download md" href="{{ url_for('download', book_id=book.book_id, kind='markdown') }}">Markdown 다운로드</a>
+    <a class="download src" href="{{ url_for('download', book_id=book.book_id, kind='source') }}">추출 텍스트</a>
+  </div>
+</section>
+{% endblock %}
+

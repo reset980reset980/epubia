@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero-grid">
+  <div>
+    <p class="eyebrow">원고 업로드</p>
+    <h1>PDF 자료를 전자책 원고로 정리하고 바로 출판본을 만듭니다.</h1>
+    <p class="lead">디지털 PDF, TXT, Markdown 파일을 올리면 텍스트를 추출하고 장을 나눈 뒤 EPUB, PDF, Markdown 파일을 생성합니다.</p>
+  </div>
+  <div class="version-panel">
+    <span>현재 버전</span>
+    <strong>{{ app_version }}</strong>
+    <small>한국어 전자책 생성 MVP</small>
+  </div>
+</section>
+
+<section class="workbench">
+  <form class="publish-form" method="post" action="/publish" enctype="multipart/form-data">
+    <div class="panel-title">
+      <h2>새 전자책 만들기</h2>
+      <span>PDF/TXT/MD</span>
+    </div>
+    <div class="upload-box">
+      <input type="file" name="source" accept=".pdf,.txt,.md,.markdown" required>
+      <p>최대 30MB. 스캔 이미지 PDF는 텍스트 추출이 어려울 수 있습니다.</p>
+    </div>
+    <div class="field-grid">
+      <label>책 제목<input name="title" placeholder="비워두면 원고 첫 줄에서 자동 추정"></label>
+      <label>저자<input name="author" value="기혜경"></label>
+      <label>부제<input name="subtitle" placeholder="선택 입력"></label>
+      <label>출판사<input name="publisher" value="혜경 전자책 스튜디오"></label>
+    </div>
+    <label>소개글<textarea name="description" rows="4" placeholder="책 소개, 판매 페이지 설명, 상담 자료 설명 등을 입력합니다."></textarea></label>
+    <button class="primary" type="submit">전자책 생성</button>
+  </form>
+
+  <aside class="flow-card">
+    <h2>자동 처리 흐름</h2>
+    <ol>
+      <li><strong>추출</strong><span>PDF/TXT에서 본문을 UTF-8 텍스트로 정리</span></li>
+      <li><strong>구성</strong><span>제1장, 숫자 제목, Markdown 제목을 챕터로 인식</span></li>
+      <li><strong>출판</strong><span>EPUB, PDF, Markdown 파일 생성</span></li>
+    </ol>
+  </aside>
+</section>
+
+<section class="library">
+  <div class="section-head">
+    <h2>최근 생성한 전자책</h2>
+    <span>{{ books|length }}개 표시</span>
+  </div>
+  {% if books %}
+  <div class="book-list">
+    {% for book in books %}
+    <a class="book-row" href="{{ url_for('book_detail', book_id=book.book_id) }}">
+      <strong>{{ book.title }}</strong>
+      <span>{{ book.author }} · {{ book.chapter_count }}장 · {{ book.created_at }}</span>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty">아직 생성한 전자책이 없습니다.</div>
+  {% endif %}
+</section>
+{% endblock %}
+

@@ -99,11 +99,19 @@ def gui():
 #--------------------------------------------------
 # ePub handling
 #--------------------------------------------------
+def safe_extract(zipf, dest):
+    dest = os.path.abspath(dest)
+    for member in zipf.infolist():
+        target = os.path.abspath(os.path.join(dest, member.filename))
+        if not target.startswith(dest + os.sep):
+            raise Exception("Unsafe zip path: %s" % member.filename)
+    zipf.extractall(dest)
+
 def tgtxchg(epubfile, tgtfiles, fontfile):
     # extract
     epub = zipfile.ZipFile(epubfile,'r')
     dir = tempfile.mkdtemp()
-    epub.extractall(dir)
+    safe_extract(epub, dir)
     epub.close()
     # check
     xml = open( os.path.join(dir,'content.opf') ).read()
