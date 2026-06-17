@@ -1,5 +1,6 @@
 (function () {
-  const pages = window.READER_PAGES || [];
+  const sourcePages = window.READER_PAGES || [];
+  let pages = sourcePages;
   const bookId = window.READER_BOOK_ID || "book";
   const spread = document.getElementById("bookSpread");
   const viewport = document.getElementById("bookViewport");
@@ -18,6 +19,7 @@
   let fontScale = Number(localStorage.getItem(fontKey) || 1);
   let dark = localStorage.getItem(themeKey) === "dark";
   let drag = null;
+  let paginationKey = "";
 
   function isFocusMode() {
     return document.body.classList.contains("reader-focus-mode");
@@ -88,8 +90,116 @@
     return element;
   }
 
+  function layoutKey() {
+    const rect = viewport.getBoundingClientRect();
+    return [
+      Math.round(rect.width),
+      Math.round(rect.height),
+      spreadSize(),
+      fontScale,
+      isFocusMode() ? "focus" : "normal",
+    ].join(":");
+  }
+
+  function measuredSpreadWidth() {
+    const size = spreadSize();
+    const styles = getComputedStyle(viewport);
+    const horizontalPadding = parseFloat(styles.paddingLeft) + parseFloat(styles.paddingRight);
+    const maxSpread = Math.min(Math.max(1, viewport.clientWidth - horizontalPadding), 860);
+    return size === 1 ? maxSpread : maxSpread / 2;
+  }
+
+  function pageFits(measurer, page) {
+    const probe = pageElement(page, 0, "left");
+    probe.classList.add("reader-measure-page");
+    measurer.replaceChildren(probe);
+    const blocks = probe.querySelectorAll("h2, p");
+    const lastBlock = blocks[blocks.length - 1];
+    if (!lastBlock) return true;
+    const pageRect = probe.getBoundingClientRect();
+    const contentBottom = lastBlock.getBoundingClientRect().bottom - pageRect.top;
+    return contentBottom <= probe.clientHeight - 48;
+  }
+
+  function pageTextLength(page) {
+    return (page.title || "").length + (page.paragraphs || []).join(" ").length;
+  }
+
+  function maxPageChars() {
+    if (isFocusMode() && window.matchMedia("(orientation: landscape) and (max-height: 700px)").matches) {
+      return 520;
+    }
+    return spreadSize() === 1 ? 520 : 450;
+  }
+
+  function repaginate() {
+    if (!sourcePages.length || !viewport) return sourcePages;
+    const key = layoutKey();
+    if (key === paginationKey) return pages;
+    paginationKey = key;
+
+    const nextPages = [];
+    const cover = sourcePages.find((page) => page.kind === "cover");
+    if (cover) nextPages.push(cover);
+
+    const measurer = document.createElement("div");
+    measurer.className = "reader-page-measurer";
+    measurer.style.setProperty("--reader-scale", String(fontScale));
+    const styles = getComputedStyle(viewport);
+    const pageWidth = measuredSpreadWidth();
+    const verticalPadding = parseFloat(styles.paddingTop) + parseFloat(styles.paddingBottom);
+    const pageHeight = Math.max(1, viewport.clientHeight - verticalPadding);
+    measurer.style.width = `${pageWidth}px`;
+    measurer.style.height = `${pageHeight}px`;
+    document.body.append(measurer);
+
+    let current = null;
+    for (const source of sourcePages) {
+      if (source.kind === "cover") continue;
+      const paragraphs = source.paragraphs || [];
+      let pageTitle = source.title || "";
+      if (!paragraphs.length && source.title) {
+        nextPages.push({...source});
+        continue;
+      }
+      for (const paragraph of paragraphs) {
+        const startsNewSection = pageTitle || (current && source.chapter && source.chapter !== current.chapter);
+        if (!current || startsNewSection) {
+          if (current) nextPages.push(current);
+          current = {
+            kind: source.kind || "chapter",
+            title: pageTitle || "",
+            runningTitle: source.runningTitle || pageTitle || "",
+            paragraphs: [],
+            chapter: source.chapter || 0,
+          };
+          pageTitle = "";
+        }
+        const candidate = {...current, paragraphs: [...current.paragraphs, paragraph]};
+        if (current.paragraphs.length && (pageTextLength(candidate) > maxPageChars() || !pageFits(measurer, candidate))) {
+          nextPages.push(current);
+          current = {
+            kind: source.kind || "chapter",
+            title: "",
+            runningTitle: source.runningTitle || current.runningTitle || "",
+            paragraphs: [paragraph],
+            chapter: source.chapter || current.chapter || 0,
+          };
+        } else {
+          current = candidate;
+        }
+      }
+    }
+    if (current) nextPages.push(current);
+    measurer.remove();
+    pages = nextPages;
+    return pages;
+  }
+
   function render(direction) {
-    if (!spread || !pages.length) return;
+    if (!spread || !sourcePages.length) return;
+    repaginate();
+    window.READER_RENDERED_PAGES = pages;
     pageIndex = normalizeIndex(pageIndex);
     viewport.classList.toggle("dark", dark);
     spread.style.setProperty("--reader-scale", String(fontScale));

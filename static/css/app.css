@@ -280,6 +280,19 @@ body.reader-focus-mode .book-page {
   transform-style: preserve-3d;
   transition: transform .52s cubic-bezier(.18,.84,.24,1), filter .52s cubic-bezier(.18,.84,.24,1);
 }
+.reader-page-measurer {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  visibility: hidden;
+  pointer-events: none;
+  overflow: hidden;
+  contain: layout style;
+}
+.reader-page-measurer .book-page {
+  width: 100%;
+  height: 100%;
+}
 .book-spread.dragging {
   transform: translateX(calc(var(--drag-x) * .12px)) rotateY(calc(var(--drag-progress) * -9deg));
   filter: drop-shadow(0 28px 42px rgba(23, 33, 38, .22));

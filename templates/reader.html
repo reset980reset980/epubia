@@ -38,5 +38,5 @@
   window.READER_BOOK_ID = {{ book.book_id|tojson }};
   window.READER_PAGES = {{ pages|tojson }};
 </script>
-<script src="{{ url_for('static', filename='js/flipbook.js') }}"></script>
+<script src="{{ url_for('static', filename='js/flipbook.js', v=app_version) }}"></script>
 {% endblock %}

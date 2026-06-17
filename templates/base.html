@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}혜경 전자책 스튜디오{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css', v=app_version) }}">
 </head>
 <body>
   <header class="topbar">
@@ -44,4 +44,3 @@
   </footer>
 </body>
 </html>
-
