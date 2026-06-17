@@ -258,8 +258,21 @@ body.reader-focus-mode .reader-status span {
   display: none;
 }
 body.reader-focus-mode .book-page {
+  padding: 30px 30px 38px;
   overflow-y: auto;
   scrollbar-width: thin;
+}
+body.reader-focus-mode .page-running {
+  margin-bottom: 10px;
+}
+body.reader-focus-mode .book-page h2 {
+  font-size: 22px;
+  margin-bottom: 14px;
+}
+body.reader-focus-mode .book-page p {
+  font-size: calc(15px * var(--reader-scale));
+  line-height: 1.66;
+  margin-bottom: 9px;
 }
 .book-viewport.dark {
   background:
@@ -506,23 +519,23 @@ body.reader-focus-mode .book-page {
     padding: 6px;
   }
   body.reader-focus-mode .book-page {
-    padding: 24px 24px 34px;
+    padding: 20px 24px 28px;
   }
   body.reader-focus-mode .page-running {
-    min-height: 16px;
-    margin-bottom: 8px;
+    min-height: 14px;
+    margin-bottom: 6px;
     font-size: 10px;
   }
   body.reader-focus-mode .book-page h2 {
-    font-size: 20px;
-    margin-bottom: 12px;
+    font-size: 18px;
+    margin-bottom: 10px;
   }
   body.reader-focus-mode .book-page p {
-    font-size: calc(14px * var(--reader-scale));
-    line-height: 1.58;
-    margin-bottom: 8px;
+    font-size: calc(13.2px * var(--reader-scale));
+    line-height: 1.5;
+    margin-bottom: 6px;
   }
   body.reader-focus-mode .page-number {
-    bottom: 12px;
+    bottom: 8px;
   }
 }

@@ -118,7 +118,8 @@
     if (!lastBlock) return true;
     const pageRect = probe.getBoundingClientRect();
     const contentBottom = lastBlock.getBoundingClientRect().bottom - pageRect.top;
-    return contentBottom <= probe.clientHeight - 48;
+    const reserve = isFocusMode() && window.matchMedia("(orientation: landscape) and (max-height: 700px)").matches ? 30 : 48;
+    return contentBottom <= probe.clientHeight - reserve && probe.scrollHeight <= probe.clientHeight;
   }
 
   function pageTextLength(page) {
@@ -127,9 +128,9 @@
 
   function maxPageChars() {
     if (isFocusMode() && window.matchMedia("(orientation: landscape) and (max-height: 700px)").matches) {
-      return 520;
+      return 450;
     }
-    return spreadSize() === 1 ? 520 : 450;
+    return spreadSize() === 1 ? 820 : 680;
   }
 
   function repaginate() {
