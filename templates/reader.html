@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ book.title }} 읽기 - 혜경 전자책 스튜디오{% endblock %}
+{% block content %}
+<section class="reader-shell">
+  <aside class="reader-toc">
+    <p class="eyebrow">웹 리더</p>
+    <h2>{{ book.title }}</h2>
+    <p>{{ book.author }} · {{ book.chapter_count }}장</p>
+    <nav class="chapter-nav">
+      {% for chapter in chapters %}
+      <a href="#chapter-{{ loop.index }}">{{ loop.index }}. {{ chapter.title }}</a>
+      {% endfor %}
+    </nav>
+    <a class="reader-back" href="{{ url_for('book_detail', book_id=book.book_id) }}">출판 결과로 돌아가기</a>
+  </aside>
+
+  <article class="reader-book">
+    <header class="reader-cover">
+      <span>혜경 전자책 스튜디오</span>
+      <h1>{{ book.title }}</h1>
+      <p>{{ book.author }}</p>
+    </header>
+    {% for chapter in chapters %}
+    <section class="reader-chapter" id="chapter-{{ loop.index }}">
+      <h2>{{ chapter.title }}</h2>
+      {% for paragraph in chapter.body.split('\n\n') %}
+        {% if paragraph.strip() %}
+        <p>{{ paragraph.strip().replace('\n', ' ') }}</p>
+        {% endif %}
+      {% endfor %}
+    </section>
+    {% endfor %}
+  </article>
+</section>
+{% endblock %}

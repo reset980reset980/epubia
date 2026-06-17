@@ -8,6 +8,7 @@
     <p class="lead">{{ book.author }} · {{ book.chapter_count }}장 · {{ book.created_at }}</p>
   </div>
   <div class="download-grid">
+    <a class="download read" href="{{ url_for('read_book', book_id=book.book_id) }}">웹에서 읽기</a>
     <a class="download epub" href="{{ url_for('download', book_id=book.book_id, kind='epub') }}">EPUB 다운로드</a>
     <a class="download pdf" href="{{ url_for('download', book_id=book.book_id, kind='pdf') }}">PDF 다운로드</a>
     <a class="download md" href="{{ url_for('download', book_id=book.book_id, kind='markdown') }}">Markdown 다운로드</a>
@@ -15,4 +16,3 @@
   </div>
 </section>
 {% endblock %}
-

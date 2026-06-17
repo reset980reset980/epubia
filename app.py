@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from flask import Flask, abort, flash, redirect, render_template, request, send_file, session, url_for
 from werkzeug.utils import secure_filename
 
-from ebook_pipeline import BookMeta, build_book, safe_filename
+from ebook_pipeline import BookMeta, build_book, safe_filename, split_chapters
 
 
 ROOT = Path(__file__).resolve().parent
@@ -129,13 +129,14 @@ def publish():
         flash("업로드할 PDF, TXT, Markdown 파일을 선택해주세요.", "error")
         return redirect(url_for("index"))
 
-    filename = secure_filename(source.filename) or f"source-{secrets.token_hex(4)}"
-    ext = Path(filename).suffix.lower()
+    original_filename = source.filename or ""
+    ext = Path(original_filename).suffix.lower()
     if ext not in {".pdf", ".txt", ".md", ".markdown"}:
         flash("PDF, TXT, Markdown 파일만 업로드할 수 있습니다.", "error")
         return redirect(url_for("index"))
 
-    upload_name = f"{secrets.token_hex(8)}-{safe_filename(Path(filename).stem)}{ext}"
+    safe_stem = secure_filename(Path(original_filename).stem) or safe_filename(Path(original_filename).stem)
+    upload_name = f"{secrets.token_hex(8)}-{safe_stem or 'source'}{ext}"
     upload_path = UPLOAD_DIR / upload_name
     source.save(upload_path)
 
@@ -164,6 +165,19 @@ def book_detail(book_id: str):
     if not manifest:
         abort(404)
     return render_template("book.html", book=manifest)
+
+
+@app.get("/books/<book_id>/read")
+def read_book(book_id: str):
+    manifest = read_manifest(book_id)
+    if not manifest:
+        abort(404)
+    source_path = Path(manifest["source_path"])
+    if not source_path.exists() or BOOK_DIR not in source_path.resolve().parents:
+        abort(404)
+    text = source_path.read_text(encoding="utf-8")
+    chapters = split_chapters(text)
+    return render_template("reader.html", book=manifest, chapters=chapters)
 
 
 @app.get("/download/<book_id>/<kind>")
@@ -234,4 +248,3 @@ def list_books() -> list[dict]:
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "5010"))
     app.run(host="0.0.0.0", port=port, debug=False)
-
