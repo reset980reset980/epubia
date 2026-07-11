@@ -3,44 +3,76 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}혜경 전자책 스튜디오{% endblock %}</title>
+  <meta name="theme-color" content="#071416">
+  <meta name="description" content="{% block description %}한국어 원고를 EPUB과 PDF로 완성하는 {{ site.name }}{% endblock %}">
+  <title>{% block title %}{{ site.name }}{% endblock %}</title>
+  <link rel="icon" href="{{ url_for('static', filename='images/favicon.svg', v=app_version) }}" type="image/svg+xml">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css', v=app_version) }}">
+  <style>:root { --aqua: {{ site.accent_color }}; --cobalt: {{ site.primary_color }}; }</style>
 </head>
-<body>
-  <header class="topbar">
-    <a class="brand" href="/">
-      <span class="brand-mark">冊</span>
-      <span>
-        <strong>혜경 전자책 스튜디오</strong>
-        <small>PDF/TXT 원고를 EPUB/PDF로 정리</small>
-      </span>
-    </a>
-    <nav>
-      <a href="/">출판</a>
-      <a href="/help">도움말</a>
-      <a href="/settings">설정</a>
+<body class="{% block body_class %}{% endblock %}">
+  <a class="skip-link" href="#main-content">본문으로 바로가기</a>
+  <div class="site-frame">
+    <header class="topbar site-header">
+      <a class="brand" href="{{ url_for('index') }}" aria-label="{{ site.header_title }} 홈">
+        <span class="brand-mark" aria-hidden="true">{{ site.brand_mark }}</span>
+        <span class="brand-copy">
+          {% if site.header_subtitle %}<small>{{ site.header_subtitle }}</small>{% endif %}
+          <strong>{{ site.header_title }}</strong>
+        </span>
+      </a>
+
+      <nav class="site-nav" aria-label="주요 메뉴">
+        <a href="{{ url_for('index') }}"{% if request.endpoint in ('index', 'book_detail', 'read_book', 'read_html_book', 'public_book_sample', 'public_full_book') %} aria-current="page"{% endif %}>서재</a>
+        {% if current_user %}
+        <a href="{{ url_for('help_page') }}"{% if request.endpoint == 'help_page' %} aria-current="page"{% endif %}>이용 안내</a>
+        {% if is_admin %}
+        <a href="{{ url_for('settings') }}"{% if request.endpoint in ('settings', 'change_password') %} aria-current="page"{% endif %}>설정</a>
+        {% endif %}
+        <form class="nav-logout" action="{{ url_for('logout') }}" method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button type="submit">로그아웃</button>
+        </form>
+        {% else %}
+        <a href="{{ url_for('login') }}"{% if request.endpoint == 'login' %} aria-current="page"{% endif %}>관리자 로그인</a>
+        {% endif %}
+      </nav>
+
       {% if current_user %}
-      <a href="/logout">로그아웃</a>
+      <a class="header-publish" href="{{ url_for('index') }}#publish-workbench">
+        <span aria-hidden="true">＋</span> 새 책 출판
+      </a>
       {% endif %}
-    </nav>
-  </header>
+    </header>
 
-  <main class="page">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-      <div class="messages">
-        {% for category, message in messages %}
-        <div class="message {{ category }}">{{ message }}</div>
-        {% endfor %}
+    <main class="page" id="main-content" tabindex="-1">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="messages" aria-live="polite">
+          {% for category, message in messages %}
+          <div class="message {{ category }}" role="status">
+            <span class="message-mark" aria-hidden="true"></span>
+            <span>{{ message }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer site-footer">
+      <div>
+        <strong>{{ site.footer_title }}</strong>
+        {% if site.footer_tagline %}<span>{{ site.footer_tagline }}</span>{% endif %}
       </div>
-      {% endif %}
-    {% endwith %}
-    {% block content %}{% endblock %}
-  </main>
-
-  <footer class="footer">
-    <span>v{{ app_version }}</span>
-    <span>epub.xsw.kr</span>
-  </footer>
+      <div class="footer-meta">
+        <span>epub.xsw.kr</span>
+        <span aria-hidden="true">·</span>
+        <span>VERSION {{ app_version }}</span>
+      </div>
+    </footer>
+  </div>
+  {% block scripts %}{% endblock %}
 </body>
 </html>

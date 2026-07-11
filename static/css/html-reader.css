@@ -1,0 +1,211 @@
+:root {
+  color-scheme: dark;
+  --ink: #f4f5ef;
+  --muted: #9aa9a8;
+  --line: rgba(155, 190, 185, .2);
+  --night: #071416;
+  --panel: #0c2022;
+  --accent: #49d3c4;
+  --cobalt: #356de8;
+}
+
+* { box-sizing: border-box; }
+
+html,
+body {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  color: var(--ink);
+  background: var(--night);
+  font-family: Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+}
+
+button,
+a { font: inherit; }
+
+.html-reader-shell {
+  height: 100vh;
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  background:
+    radial-gradient(circle at 86% 2%, rgba(53, 109, 232, .18), transparent 27rem),
+    var(--night);
+}
+
+.html-reader-toolbar {
+  z-index: 2;
+  min-height: 76px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 20px;
+  align-items: center;
+  padding: 11px clamp(14px, 2.5vw, 34px);
+  border-bottom: 1px solid var(--line);
+  background: rgba(7, 20, 22, .96);
+  box-shadow: 0 9px 35px rgba(0, 0, 0, .18);
+}
+
+.html-reader-back,
+.html-reader-actions a,
+.html-reader-actions button {
+  min-height: 40px;
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 13px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, .035);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 750;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.html-reader-back:hover,
+.html-reader-actions a:hover,
+.html-reader-actions button:hover,
+.html-reader-back:focus-visible,
+.html-reader-actions a:focus-visible,
+.html-reader-actions button:focus-visible {
+  color: #fff;
+  border-color: var(--accent);
+  outline: none;
+}
+
+.html-reader-title {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, auto) auto;
+  gap: 8px 14px;
+  align-items: baseline;
+}
+
+.html-reader-title small {
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .2em;
+}
+
+.html-reader-title strong {
+  overflow: hidden;
+  font-family: "Noto Serif KR", "Nanum Myeongjo", serif;
+  font-size: clamp(16px, 1.7vw, 22px);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.html-reader-title span {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.html-reader-actions {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+}
+
+.html-reader-actions a {
+  color: #fff;
+  background: var(--cobalt);
+  border-color: transparent;
+}
+
+.html-reader-stage {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  padding: clamp(4px, .7vw, 10px);
+  background: #d8d9d3;
+}
+
+.html-reader-stage iframe {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: #f8f7f1;
+  border: 0;
+  border-radius: 5px;
+}
+
+.html-reader-loading {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  margin: 0;
+  color: #314443;
+  font-size: 13px;
+  font-weight: 750;
+  transform: translate(-50%, -50%);
+}
+
+.html-reader-stage.is-ready .html-reader-loading { display: none; }
+
+.html-reader-stage:fullscreen {
+  padding: 0;
+  background: #f8f7f1;
+}
+
+.html-reader-stage:fullscreen iframe { border-radius: 0; }
+
+@media (max-width: 720px) {
+  .html-reader-toolbar {
+    min-height: 108px;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px 11px;
+    padding: 9px 10px;
+  }
+
+  .html-reader-back {
+    min-width: 42px;
+    padding: 0 9px;
+  }
+
+  .html-reader-back span:last-child { display: none; }
+
+  .html-reader-title {
+    grid-template-columns: 1fr auto;
+    gap: 2px 8px;
+  }
+
+  .html-reader-title small { grid-column: 1 / -1; }
+  .html-reader-title strong { font-size: 15px; }
+  .html-reader-title span { max-width: 85px; }
+
+  .html-reader-actions {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .html-reader-actions a,
+  .html-reader-actions button {
+    min-height: 34px;
+    padding: 0 7px;
+    font-size: 11px;
+  }
+
+  .html-reader-stage { padding: 0; }
+  .html-reader-stage iframe { border-radius: 0; }
+}
+
+@media (max-width: 360px) {
+  .html-reader-actions a,
+  .html-reader-actions button { font-size: 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; }
+}

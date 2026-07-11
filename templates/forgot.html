@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}비밀번호 찾기 · {{ site.name }}{% endblock %}
+{% block description %}등록 이메일로 {{ site.name }} 임시 비밀번호를 받으세요.{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+{% block content %}
+<section class="auth-shell" aria-labelledby="forgot-title">
+  <aside class="auth-story forgot-story">
+    <p class="eyebrow"><span></span> ACCOUNT RECOVERY</p>
+    <h1>다시, 당신의<br><em>서재로.</em></h1>
+    <p>등록한 계정을 확인하면 새로 만든 임시 비밀번호를 이메일로 보내드립니다.</p>
+    <div class="mail-seal" aria-hidden="true"><span>HG</span></div>
+    <ul>
+      <li>등록 이메일 확인</li>
+      <li>임시 비밀번호 발송</li>
+      <li>로그인 후 비밀번호 변경</li>
+    </ul>
+  </aside>
+
+  <form class="login-card auth-card" method="post">
+    <div class="auth-card-heading">
+      <span class="auth-index">02</span>
+      <div><p class="section-kicker">FIND YOUR KEY</p><h2 id="forgot-title">비밀번호 찾기</h2></div>
+    </div>
+    <p class="auth-intro">계정 아이디를 입력하면 등록된 이메일로 임시 비밀번호를 안내합니다.</p>
+    <label>
+      <span>아이디</span>
+      <input name="username" autocomplete="username" placeholder="아이디 또는 이메일" required autofocus>
+    </label>
+    <p class="privacy-note"><span aria-hidden="true">◇</span> 보안을 위해 계정 등록 여부와 관계없이 같은 안내가 표시됩니다.</p>
+    <button class="primary auth-submit" type="submit">임시 비밀번호 받기 <span aria-hidden="true">→</span></button>
+    <div class="auth-card-footer">
+      <span>비밀번호가 생각났나요?</span>
+      <a href="{{ url_for('login') }}">로그인으로 돌아가기</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

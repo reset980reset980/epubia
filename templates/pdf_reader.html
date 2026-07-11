@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block title %}{{ book.title }} PDF 읽기 - {{ site.name }}{% endblock %}
+{% block body_class %}pdf-reader-page{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pdf-reader.css', v=app_version) }}">
+
+<section
+  class="pdf-reader"
+  id="pdfReader"
+  data-page-count="{{ page_count }}"
+  data-page-url-template="{{ url_for('pdf_page_image', book_id=book.book_id, page_number=987654321) }}"
+  data-render-version="{{ app_version }}"
+  data-book-title="{{ book.title }}"
+  aria-label="{{ book.title }} PDF 리더"
+>
+  <button
+    type="button"
+    class="pdf-drawer-overlay"
+    id="pdfDrawerOverlay"
+    aria-label="페이지 목록 닫기"
+    aria-hidden="true"
+    tabindex="-1"
+    hidden
+  ></button>
+
+  <aside
+    class="pdf-page-drawer"
+    id="pdfPageDrawer"
+    aria-label="PDF 페이지 목록"
+    aria-hidden="false"
+  >
+    <header class="pdf-drawer-header">
+      <div>
+        <p class="pdf-kicker">PAGE INDEX</p>
+        <h2>페이지 목록</h2>
+        <p>총 {{ page_count }}페이지</p>
+      </div>
+      <button
+        type="button"
+        class="pdf-drawer-close"
+        id="pdfDrawerClose"
+        aria-label="페이지 목록 닫기"
+      >
+        <span aria-hidden="true">×</span>
+      </button>
+    </header>
+
+    <nav class="pdf-thumbnail-nav" id="pdfThumbnailNav" aria-label="페이지별 미리보기">
+      <ol>
+        {% for page_number in range(1, thumbnail_page_count + 1) %}
+        <li>
+          <button
+            type="button"
+            class="pdf-thumbnail-button{% if page_number == 1 %} is-current{% endif %}"
+            data-page="{{ page_number }}"
+            data-screen-src="{{ url_for('pdf_page_image', book_id=book.book_id, page_number=page_number, variant='screen', v=app_version) }}"
+            data-thumb-src="{{ url_for('pdf_page_image', book_id=book.book_id, page_number=page_number, variant='thumb', v=app_version) }}"
+            aria-label="{{ page_number }}페이지로 이동"
+            {% if page_number == 1 %}aria-current="page"{% endif %}
+          >
+            <span class="pdf-thumbnail-frame" aria-hidden="true">
+              <span class="pdf-thumbnail-placeholder">미리보기<br>준비 중</span>
+              <img
+                src="{{ url_for('pdf_page_image', book_id=book.book_id, page_number=page_number, variant='thumb', v=app_version) }}"
+                alt=""
+                {% if page_number == 1 %}loading="eager" fetchpriority="high"{% else %}loading="lazy"{% endif %}
+                decoding="async"
+              >
+            </span>
+            <span class="pdf-thumbnail-meta">
+              <strong>{{ page_number }}</strong>
+              <span>페이지</span>
+              <small{% if page_number != 1 %} hidden{% endif %}>현재</small>
+            </span>
+          </button>
+        </li>
+        {% endfor %}
+      </ol>
+    </nav>
+
+    {% if thumbnail_page_count < page_count %}
+    <p class="pdf-thumbnail-limit-note">
+      앞 {{ thumbnail_page_count }}페이지의 썸네일을 표시합니다.<br>
+      페이지 번호 입력으로 전체 {{ page_count }}페이지를 이동할 수 있습니다.
+    </p>
+    {% endif %}
+
+    <a class="pdf-result-link" href="{{ url_for('book_detail', book_id=book.book_id) }}">
+      <span aria-hidden="true">←</span> 출판 결과로 돌아가기
+    </a>
+  </aside>
+
+  <article class="pdf-reader-main">
+    <header class="pdf-reader-heading">
+      <div>
+        <p class="pdf-kicker">ORIGINAL PDF VIEWER</p>
+        <h1>{{ book.title }}</h1>
+      </div>
+      <p>{{ book.author or '저자 미상' }} <span aria-hidden="true">·</span> {{ page_count }}페이지</p>
+    </header>
+
+    <div class="pdf-toolbar" role="toolbar" aria-label="PDF 읽기 도구">
+      <button
+        type="button"
+        class="pdf-side-tab"
+        id="pdfPageToggle"
+        aria-label="페이지 목록 열기"
+        aria-controls="pdfPageDrawer"
+        aria-expanded="false"
+      >
+        <span aria-hidden="true">▤</span>
+        <span>페이지 목록</span>
+      </button>
+
+      <button type="button" class="pdf-tool-button pdf-prev" id="pdfPrev" aria-label="이전 페이지">
+        <span aria-hidden="true">‹</span><span>이전</span>
+      </button>
+
+      <label class="pdf-page-jump" for="pdfPageInput">
+        <span class="sr-only">이동할 페이지</span>
+        <input id="pdfPageInput" type="number" min="1" max="{{ page_count }}" value="1" inputmode="numeric">
+        <span aria-hidden="true">/</span>
+        <strong>{{ page_count }}</strong>
+      </label>
+
+      <button type="button" class="pdf-tool-button pdf-next" id="pdfNext" aria-label="다음 페이지">
+        <span>다음</span><span aria-hidden="true">›</span>
+      </button>
+
+      <button type="button" class="pdf-tool-button pdf-zoom-out" id="pdfZoomOut" aria-label="축소">
+        <span aria-hidden="true">−</span><span class="sr-only">축소</span>
+      </button>
+      <output class="pdf-zoom-value" id="pdfZoomValue" aria-label="현재 확대 비율">100%</output>
+      <button type="button" class="pdf-tool-button pdf-zoom-in" id="pdfZoomIn" aria-label="확대">
+        <span aria-hidden="true">＋</span><span class="sr-only">확대</span>
+      </button>
+
+      <a
+        class="pdf-original-link"
+        href="{{ url_for('view_original_pdf', book_id=book.book_id) }}"
+        target="_blank"
+        rel="noopener"
+      >원본 PDF <span aria-hidden="true">↗</span></a>
+    </div>
+
+    <div
+      class="pdf-canvas-scroller"
+      id="pdfCanvasScroller"
+      role="region"
+      aria-label="PDF 페이지 화면"
+      tabindex="0"
+    >
+      <div class="pdf-canvas-space" id="pdfCanvasSpace">
+        <figure class="pdf-page-sheet" id="pdfPageSheet">
+          <div class="pdf-loading-indicator" aria-hidden="true">
+            <span></span>
+          </div>
+          <img
+            class="pdf-page-image"
+            id="pdfPageImage"
+            src="{{ url_for('pdf_page_image', book_id=book.book_id, page_number=1, variant='screen', v=app_version) }}"
+            alt="{{ book.title }} PDF 1페이지"
+            decoding="async"
+            fetchpriority="high"
+            aria-describedby="pdfReaderStatus"
+          >
+          <div class="pdf-error-panel" id="pdfErrorPanel" hidden>
+            <strong>페이지를 표시할 수 없습니다.</strong>
+            <span>이미지를 다시 불러와 주세요.</span>
+            <button type="button" id="pdfRetry">다시 시도</button>
+          </div>
+          <figcaption class="sr-only" id="pdfPageCaption">1페이지</figcaption>
+        </figure>
+      </div>
+    </div>
+
+    <p class="pdf-reader-status" id="pdfReaderStatus" role="status" aria-live="polite">
+      1페이지를 불러오는 중입니다.
+    </p>
+  </article>
+</section>
+
+<script src="{{ url_for('static', filename='js/pdf-reader.js', v=app_version) }}" defer></script>
+{% endblock %}

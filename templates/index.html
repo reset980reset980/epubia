@@ -1,64 +1,291 @@
 {% extends "base.html" %}
+{% block title %}서재 · {{ site.name }}{% endblock %}
+{% block description %}PDF, TXT, Markdown 원고와 완성된 HTML ZIP 전자책을 출판하고 한곳에서 관리하세요.{% endblock %}
 {% block content %}
-<section class="hero-grid">
-  <div>
-    <p class="eyebrow">원고 업로드</p>
-    <h1>PDF 자료를 전자책 원고로 정리하고 바로 출판본을 만듭니다.</h1>
-    <p class="lead">디지털 PDF, TXT, Markdown 파일을 올리면 텍스트를 추출하고 장을 나눈 뒤 EPUB, PDF, Markdown 파일을 생성합니다.</p>
+<section class="library-hero" aria-labelledby="hero-title">
+  <div class="hero-copy">
+    <p class="eyebrow"><span></span> {{ site.hero_kicker }}</p>
+    <h1 id="hero-title">{{ site.hero_title }}<br><em>{{ site.hero_title_accent }}</em></h1>
+    <p class="lead">{{ site.hero_description }}</p>
+    <div class="hero-actions">
+      {% if publisher_mode %}
+      <a class="primary hero-primary" href="#publish-workbench">전자책 출판 시작</a>
+      <a class="text-link" href="#my-library">내 서재 둘러보기 <span aria-hidden="true">↓</span></a>
+      {% else %}
+      <a class="primary hero-primary" href="#my-library">공개 전자책 둘러보기</a>
+      <a class="text-link" href="{{ url_for('login') }}">출판 관리자 로그인 <span aria-hidden="true">→</span></a>
+      {% endif %}
+    </div>
   </div>
-  <div class="version-panel">
-    <span>현재 버전</span>
-    <strong>{{ app_version }}</strong>
-    <small>한국어 전자책 생성 MVP</small>
-  </div>
-</section>
 
-<section class="workbench">
-  <form class="publish-form" method="post" action="/publish" enctype="multipart/form-data">
-    <div class="panel-title">
-      <h2>새 전자책 만들기</h2>
-      <span>PDF/TXT/MD</span>
-    </div>
-    <div class="upload-box">
-      <input type="file" name="source" accept=".pdf,.txt,.md,.markdown" required>
-      <p>최대 30MB. 스캔 이미지 PDF는 텍스트 추출이 어려울 수 있습니다.</p>
-    </div>
-    <div class="field-grid">
-      <label>책 제목<input name="title" placeholder="비워두면 원고 첫 줄에서 자동 추정"></label>
-      <label>저자<input name="author" value="기혜경"></label>
-      <label>부제<input name="subtitle" placeholder="선택 입력"></label>
-      <label>출판사<input name="publisher" value="혜경 전자책 스튜디오"></label>
-    </div>
-    <label>소개글<textarea name="description" rows="4" placeholder="책 소개, 판매 페이지 설명, 상담 자료 설명 등을 입력합니다."></textarea></label>
-    <button class="primary" type="submit">전자책 생성</button>
-  </form>
-
-  <aside class="flow-card">
-    <h2>자동 처리 흐름</h2>
-    <ol>
-      <li><strong>추출</strong><span>PDF/TXT에서 본문을 UTF-8 텍스트로 정리</span></li>
-      <li><strong>구성</strong><span>제1장, 숫자 제목, Markdown 제목을 챕터로 인식</span></li>
-      <li><strong>출판</strong><span>EPUB, PDF, Markdown 파일 생성</span></li>
-    </ol>
+  <aside class="hero-edition" aria-label="스튜디오 현황">
+    <div class="edition-orbit" aria-hidden="true"></div>
+    {% if publisher_mode %}
+    <p>THE EDITOR'S DESK</p>
+    <strong>{{ books|length }}</strong>
+    <span>현재 서재의 책</span>
+    <dl>
+      <div><dt>원고</dt><dd>PDF · TXT · MD · ZIP</dd></div>
+      <div><dt>출판본</dt><dd>EPUB · PDF · HTML</dd></div>
+      <div><dt>용량</dt><dd>최대 {{ upload_mb }}MB</dd></div>
+    </dl>
+    {% else %}
+    <p>OPEN DIGITAL LIBRARY</p>
+    <strong>{{ books|length }}</strong>
+    <span>지금 공개된 전자책</span>
+    <dl>
+      <div><dt>열람</dt><dd>로그인 없이 바로</dd></div>
+      <div><dt>유료책</dt><dd>앞부분 무료 샘플</dd></div>
+      <div><dt>화면</dt><dd>모바일 · PC 최적화</dd></div>
+    </dl>
+    {% endif %}
   </aside>
 </section>
 
-<section class="library">
-  <div class="section-head">
-    <h2>최근 생성한 전자책</h2>
-    <span>{{ books|length }}개 표시</span>
+{% if publisher_mode %}
+<section class="publisher-studio" id="publish-workbench" aria-labelledby="publish-title">
+  <form
+    class="publish-form editorial-form"
+    method="post"
+    action="/publish"
+    enctype="multipart/form-data"
+    aria-busy="false"
+    data-publish-form
+    data-upload-max-bytes="{{ upload_max_bytes }}"
+    data-upload-mb="{{ upload_mb }}"
+    data-ai-cover-enabled="{{ 1 if ai_cover_enabled else 0 }}"
+    data-ai-cover-available="{{ 1 if ai_cover_available else 0 }}"
+  >
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="draft_token" value="" data-draft-token>
+    <input type="hidden" name="cover_token" value="" data-cover-token>
+    <div class="panel-title">
+      <div>
+        <p class="section-kicker">NEW PUBLICATION</p>
+        <h2 id="publish-title">새 전자책 출판</h2>
+      </div>
+      <span>약 1–3분</span>
+    </div>
+
+    <label class="upload-box" for="source-file" data-upload-dropzone>
+      <input id="source-file" type="file" name="source" accept=".pdf,.txt,.md,.markdown,.zip,application/zip" required data-file-input>
+      <span class="upload-glyph" aria-hidden="true">↥</span>
+      <span class="upload-copy">
+        <strong>파일을 끌어 놓거나 선택하세요</strong>
+        <small data-file-name aria-live="polite">PDF, TXT, Markdown, HTML ZIP · 최대 {{ upload_mb }}MB</small>
+      </span>
+      <span class="upload-action">파일 찾기</span>
+    </label>
+
+    <div class="html-zip-note" aria-label="HTML ZIP 원고 안내">
+      <span class="html-zip-mark" aria-hidden="true">&lt;/&gt;</span>
+      <p><strong>완성된 HTML 책도 그대로 출판할 수 있습니다.</strong> ZIP 최상위 또는 하나의 포장 폴더 안에 <code>index.html</code>을 두고, 사용한 CSS·JavaScript·이미지·글꼴 파일을 상대 경로 그대로 함께 압축해 주세요.</p>
+    </div>
+
+    <div class="field-grid">
+      <label>
+        <span>책 제목</span>
+        <input name="title" placeholder="비워두면 원고에서 자동으로 찾습니다">
+      </label>
+      <label>
+        <span>저자</span>
+        <input name="author" value="기혜경">
+      </label>
+      <label>
+        <span>부제</span>
+        <input name="subtitle" placeholder="선택 입력">
+      </label>
+      <label>
+        <span>출판사</span>
+        <input name="publisher" value="{{ site.name }}">
+      </label>
+    </div>
+
+    <label>
+      <span>책 소개</span>
+      <textarea name="description" rows="4" placeholder="독자에게 건넬 짧은 소개를 적어주세요. AI 표지는 이 내용을 우선 참고합니다."></textarea>
+    </label>
+
+    <section class="ai-cover-studio" aria-labelledby="ai-cover-title" aria-busy="false" data-cover-studio>
+      <div class="cover-draft-preview" data-cover-preview>
+        <div class="cover-draft-placeholder" data-cover-placeholder>
+          <span aria-hidden="true">✦</span>
+          <strong>AI COVER</strong>
+          <small>3 : 4 BOOK ART</small>
+        </div>
+        <img alt="" data-cover-preview-image hidden>
+        <span class="cover-draft-badge" data-cover-badge hidden>표지 미리보기</span>
+        <div class="cover-draft-loading" data-cover-loading hidden aria-hidden="true">
+          <span></span>
+          <small>책을 읽고 있어요</small>
+        </div>
+        <p class="cover-stale-note" data-cover-stale hidden>책 정보가 바뀌었습니다</p>
+      </div>
+
+      <div class="cover-studio-copy">
+        <p class="section-kicker">AI COVER STUDIO</p>
+        <h3 id="ai-cover-title">책 소개를 바탕으로 표지를 자동으로 만듭니다</h3>
+        <p class="cover-studio-description">
+          책 소개를 우선 사용해 OpenAI가 주제와 분위기를 파악합니다. 소개가 비어 있을 때만 원고 앞부분을 참고합니다.
+        </p>
+        <p class="cover-privacy-note">책 소개가 있으면 소개만, 없으면 원고 앞부분 최대 2,000자만 OpenAI API로 전송됩니다.</p>
+
+        <div class="cover-studio-actions">
+          <button
+            class="primary cover-generate"
+            type="button"
+            data-cover-generate
+            {% if not ai_cover_enabled or not ai_cover_available %}disabled{% endif %}
+          >
+            <span class="cover-button-icon" aria-hidden="true">✦</span>
+            <span data-cover-generate-label>AI 표지 자동 생성</span>
+          </button>
+          <button class="cover-regenerate" type="button" data-cover-regenerate hidden>다른 표지 만들기</button>
+        </div>
+
+        <p class="cover-studio-status" role="status" aria-live="polite" aria-atomic="true" data-cover-status>
+          {% if not ai_cover_enabled %}
+          AI 표지 생성 기능이 꺼져 있습니다. 설정에서 켜면 사용할 수 있어요.
+          {% elif not ai_cover_available %}
+          OpenAI API 키가 설정되지 않아 AI 표지를 만들 수 없습니다.
+          {% else %}
+          원고를 선택한 뒤 버튼을 누르세요. 생성에는 잠시 시간이 걸릴 수 있습니다.
+          {% endif %}
+        </p>
+      </div>
+    </section>
+
+    <div class="publish-submit-row">
+      <p><span aria-hidden="true">●</span> HTML ZIP은 완성된 화면과 검색·목차 기능을 그대로 보존해 출판합니다.</p>
+      <button class="primary publish-submit" type="submit" data-publish-submit>
+        <span data-publish-submit-label>출판본 만들기</span><span aria-hidden="true">→</span>
+      </button>
+    </div>
+    <div
+      class="publishing-progress"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      data-publishing-progress
+      hidden
+    >
+      <span class="publishing-progress-spinner" aria-hidden="true"></span>
+      <span class="publishing-progress-copy">
+        <strong>원고를 업로드하고 출판본을 만들고 있습니다</strong>
+        <small>HTML ZIP이나 큰 원고는 몇 분 걸릴 수 있습니다. 완료될 때까지 이 화면을 그대로 두세요.</small>
+      </span>
+    </div>
+  </form>
+
+  <aside class="publication-notes" aria-labelledby="flow-title">
+    <p class="section-kicker">FROM FILE TO BOOK</p>
+    <h2 id="flow-title">원고가 책이 되는 순서</h2>
+    <ol>
+      <li>
+        <span>01</span>
+        <div><strong>형식 확인</strong><p>원고형 PDF·TXT·MD인지, 완성형 HTML ZIP인지 안전하게 확인합니다.</p></div>
+      </li>
+      <li>
+        <span>02</span>
+        <div><strong>표지 준비</strong><p>책 소개를 참고해 표지를 만들고 서재 썸네일로 함께 연결합니다.</p></div>
+      </li>
+      <li>
+        <span>03</span>
+        <div><strong>편집 구성</strong><p>원고는 목차를 구성하고, HTML ZIP은 기존 레이아웃과 자산을 보존합니다.</p></div>
+      </li>
+      <li>
+        <span>04</span>
+        <div><strong>다중 출판</strong><p>EPUB·PDF 출판본 또는 완성된 HTML 웹 전자책을 서재에 등록합니다.</p></div>
+      </li>
+    </ol>
+    <a href="{{ url_for('help_page') }}">좋은 원고 만드는 법 <span aria-hidden="true">↗</span></a>
+  </aside>
+</section>
+{% endif %}
+
+<section class="library" id="my-library" aria-labelledby="library-title" data-library>
+  <div class="library-heading">
+    <div>
+      {% if publisher_mode %}
+      <p class="section-kicker">MY COLLECTION</p>
+      <h2 id="library-title">나의 전자책 서재</h2>
+      <p><span data-library-count>{{ books|length }}</span>권의 출판본을 보관하고 있습니다.</p>
+      {% else %}
+      <p class="section-kicker">OPEN COLLECTION</p>
+      <h2 id="library-title">전자책 서재</h2>
+      <p>로그인 없이 <span data-library-count>{{ books|length }}</span>권의 공개 전자책을 둘러볼 수 있습니다.</p>
+      {% endif %}
+    </div>
+    {% if books %}
+    <label class="library-search">
+      <span class="sr-only">서재 검색</span>
+      <span aria-hidden="true">⌕</span>
+      <input type="search" placeholder="제목 또는 저자 검색" autocomplete="off" data-library-search aria-controls="book-gallery">
+    </label>
+    {% endif %}
   </div>
+
   {% if books %}
-  <div class="book-list">
+  <div class="book-gallery" id="book-gallery">
     {% for book in books %}
-    <a class="book-row" href="{{ url_for('book_detail', book_id=book.book_id) }}">
-      <strong>{{ book.title }}</strong>
-      <span>{{ book.author }} · {{ book.chapter_count }}장 · {{ book.created_at }} · 웹 읽기 가능</span>
-    </a>
+    <article class="book-card" data-book-card data-search="{{ book.title }} {{ book.author }}">
+      <a class="book-card-link" href="{{ url_for('book_detail', book_id=book.book_id) if publisher_mode else book.sample_url }}" aria-label="{{ book.title }}, {{ book.author }} {{ '상세 보기' if publisher_mode else ('무료로 읽기' if book.commerce.access == 'free' else '샘플 읽기') }}">
+        <figure class="cover-frame">
+          <span class="cover-fallback" aria-hidden="true">
+            <small>{{ site.name_en }}</small>
+            <strong>{{ book.title }}</strong>
+            <em>{{ book.author }}</em>
+          </span>
+          <img class="cover-image" src="{{ '/covers/' ~ book.book_id if publisher_mode else book.cover_url }}" alt="" loading="lazy" data-cover-image>
+          {% if publisher_mode %}
+          <span class="cover-commerce" aria-label="{{ {'private':'비공개','published':'판매 공개','archived':'보관됨'}[book.commerce.sale_status] }}, {{ '유료' if book.commerce.access == 'paid' else '무료' }}">
+            <b class="commerce-badge state-{{ book.commerce.sale_status }}">{{ {'private':'비공개','published':'판매 공개','archived':'보관됨'}[book.commerce.sale_status] }}</b>
+            <b class="commerce-badge access-{{ book.commerce.access }}">{{ '유료' if book.commerce.access == 'paid' else '무료' }}</b>
+          </span>
+          {% else %}
+          <span class="cover-commerce" aria-label="{{ '유료 전자책' if book.commerce.access == 'paid' else '무료 전자책' }}">
+            <b class="commerce-badge access-{{ book.commerce.access }}">{{ '유료' if book.commerce.access == 'paid' else '무료' }}</b>
+          </span>
+          {% endif %}
+          {% if book.is_new %}<span class="new-badge">NEW</span>{% endif %}
+          <span class="cover-sheen" aria-hidden="true"></span>
+        </figure>
+        <div class="book-card-copy">
+          <p>{{ book.author }}</p>
+          <h3>{{ book.title }}</h3>
+          <p class="book-price{% if book.commerce.access == 'free' %} is-free{% endif %}">{% if book.commerce.access == 'paid' %}{{ "{:,}".format(book.commerce.price_krw) }}원{% else %}무료 열람{% endif %}</p>
+          {% if not publisher_mode and book.description %}<p class="book-description">{{ book.description }}</p>{% endif %}
+          <div class="book-meta">
+            <span>{{ book.chapter_count }}장</span>
+            {% if publisher_mode %}<span>{{ book.created_at[:10] }}</span>{% elif book.commerce.access == 'paid' %}<span>{{ book.commerce.sample_pages }}쪽 무료 샘플</span>{% else %}<span>전체 공개</span>{% endif %}
+          </div>
+          <span class="book-open">{% if publisher_mode %}책 열기{% elif book.commerce.access == 'paid' %}샘플 읽기{% else %}무료로 읽기{% endif %} <span aria-hidden="true">→</span></span>
+        </div>
+      </a>
+      {% if not publisher_mode and book.commerce.access == 'paid' %}
+      <a class="book-purchase" href="{{ book.purchase_url }}">운명서재에서 구매 <span aria-hidden="true">↗</span></a>
+      {% endif %}
+    </article>
     {% endfor %}
   </div>
+  <div class="library-no-results" data-no-results hidden>
+    <span aria-hidden="true">⌕</span>
+    <strong>일치하는 책이 없습니다.</strong>
+    <p>다른 제목이나 저자 이름으로 검색해 보세요.</p>
+  </div>
   {% else %}
-  <div class="empty">아직 생성한 전자책이 없습니다.</div>
+  <div class="empty-library">
+    <span class="empty-book" aria-hidden="true"></span>
+    {% if publisher_mode %}
+    <div><strong>첫 번째 책을 기다리고 있습니다.</strong><p>위에서 원고를 올리면 이곳에 당신만의 서재가 시작됩니다.</p></div>
+    <a class="primary" href="#publish-workbench">첫 책 출판하기</a>
+    {% else %}
+    <div><strong>아직 공개된 전자책이 없습니다.</strong><p>출판 준비를 마친 책이 이곳에 곧 공개됩니다.</p></div>
+    {% endif %}
+  </div>
   {% endif %}
 </section>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/library.js', v=app_version) }}" defer></script>
 {% endblock %}

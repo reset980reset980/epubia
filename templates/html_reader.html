@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#071416">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{{ book.title }} · HTML 책 읽기</title>
+  <link rel="icon" href="{{ url_for('static', filename='images/favicon.svg', v=app_version) }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/html-reader.css', v=app_version) }}">
+</head>
+<body>
+  <main class="html-reader-shell" id="htmlReaderShell">
+    <header class="html-reader-toolbar">
+      <a class="html-reader-back" href="{{ url_for('book_detail', book_id=book.book_id) }}" aria-label="{{ book.title }} 상세 화면으로 돌아가기">
+        <span aria-hidden="true">←</span>
+        <span>책 정보</span>
+      </a>
+      <div class="html-reader-title">
+        <small>HTML BOOK</small>
+        <strong>{{ book.title }}</strong>
+        <span>{{ book.author }}</span>
+      </div>
+      <div class="html-reader-actions">
+        <button type="button" id="htmlReaderReload" aria-label="책 다시 불러오기">새로고침</button>
+        <button type="button" id="htmlReaderFullscreen" aria-label="전체 화면으로 읽기">전체 화면</button>
+        <a href="{{ url_for('download', book_id=book.book_id, kind='html') }}">ZIP 받기</a>
+      </div>
+    </header>
+
+    <section class="html-reader-stage" id="htmlReaderStage" aria-label="{{ book.title }} HTML 전자책">
+      <p class="html-reader-loading" id="htmlReaderLoading" role="status">책을 여는 중입니다…</p>
+      <iframe
+        id="htmlBookFrame"
+        src="{{ html_src }}"
+        title="{{ book.title }} 본문"
+        sandbox="allow-scripts"
+        referrerpolicy="no-referrer"
+      ></iframe>
+    </section>
+  </main>
+  <script src="{{ url_for('static', filename='js/html-reader.js', v=app_version) }}" defer></script>
+</body>
+</html>

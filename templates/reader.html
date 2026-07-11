@@ -1,14 +1,53 @@
 {% extends "base.html" %}
-{% block title %}{{ book.title }} 읽기 - 혜경 전자책 스튜디오{% endblock %}
+{% block title %}{{ book.title }} 읽기 - {{ site.name }}{% endblock %}
 {% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=app_version) }}">
+
 <section class="flip-reader" data-book-id="{{ book.book_id }}">
-  <aside class="reader-toc flip-toc">
-    <p class="eyebrow">책장 리더</p>
-    <h2>{{ book.title }}</h2>
-    <p>{{ book.author }} · {{ book.chapter_count }}장</p>
-    <nav class="chapter-nav">
+  <button
+    type="button"
+    class="reader-toc-overlay"
+    id="readerTocOverlay"
+    aria-label="목차 닫기"
+    aria-hidden="true"
+    tabindex="-1"
+  ></button>
+
+  <aside class="reader-toc flip-toc" id="readerToc" aria-label="책 목차" aria-hidden="false">
+    <header class="reader-toc-head">
+      <div class="reader-toc-brand" aria-hidden="true">
+        <span>冊</span>
+        <small>책장 리더</small>
+      </div>
+      <button type="button" class="reader-toc-close" id="readerTocClose" aria-label="목차 닫기">×</button>
+    </header>
+
+    <div class="reader-toc-copy">
+      <p class="eyebrow">현재 읽는 책</p>
+      <h2>{{ book.title }}</h2>
+      <p>{{ book.author or '저자 미상' }} · {{ book.chapter_count }}장</p>
+    </div>
+
+    <div
+      class="reader-toc-progress"
+      id="readerTocProgress"
+      role="progressbar"
+      aria-label="독서 진행률"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      aria-valuenow="0"
+    >
+      <span>현재 위치 <strong id="readerTocLocation">표지</strong></span>
+      <div class="reader-toc-progress-track" aria-hidden="true">
+        <i id="readerTocProgressBar"></i>
+      </div>
+    </div>
+
+    <nav class="chapter-nav" id="readerChapterNav" aria-label="장 목록">
       {% for chapter in chapter_starts %}
-      <button type="button" data-page="{{ chapter.page }}">{{ chapter.index }}. {{ chapter.title }}</button>
+      <button type="button" data-page="{{ chapter.page }}" data-chapter="{{ chapter.index }}">
+        {{ chapter.index }}. {{ chapter.title }}
+      </button>
       {% endfor %}
     </nav>
     <a class="reader-back" href="{{ url_for('book_detail', book_id=book.book_id) }}">출판 결과</a>
@@ -16,6 +55,14 @@
 
   <article class="flip-stage" aria-label="{{ book.title }} 웹 리더">
     <div class="reader-toolbar">
+      <button
+        type="button"
+        class="tool-button reader-toc-toggle"
+        id="readerTocToggle"
+        aria-label="목차 열기"
+        aria-controls="readerToc"
+        aria-expanded="false"
+      ><span aria-hidden="true">☰</span><span>목차</span></button>
       <button type="button" class="icon-button" id="readerPrev" aria-label="이전 페이지">‹</button>
       <div class="reader-status">
         <strong id="readerPageLabel">1</strong>
@@ -36,7 +83,9 @@
 
 <script>
   window.READER_BOOK_ID = {{ book.book_id|tojson }};
+  window.READER_STUDIO_NAME = {{ site.header_title|tojson }};
   window.READER_PAGES = {{ pages|tojson }};
+  window.READER_COVER_URL = {{ ('/covers/' ~ book.book_id)|tojson }};
 </script>
 <script src="{{ url_for('static', filename='js/flipbook.js', v=app_version) }}"></script>
 {% endblock %}

@@ -1,17 +1,41 @@
 {% extends "base.html" %}
-{% block title %}로그인 - 혜경 전자책 스튜디오{% endblock %}
+{% block title %}로그인 · {{ site.name }}{% endblock %}
+{% block description %}{{ site.name }} 개인 서재에 로그인하세요.{% endblock %}
+{% block body_class %}auth-page{% endblock %}
 {% block content %}
-<section class="login-shell">
-  <form class="login-card" method="post">
-    <h1>전자책 작업실 로그인</h1>
-    <p>기존 YouTube Shorts 계정으로 로그인합니다.</p>
-    {% if error %}<div class="message error">{{ error }}</div>{% endif %}
-    <label>아이디</label>
-    <input name="username" autocomplete="username" placeholder="khg334 또는 khg334@hanmail.net" required>
-    <label>비밀번호</label>
-    <input name="password" type="password" autocomplete="current-password" required>
-    <button class="primary" type="submit">로그인</button>
+<section class="auth-shell" aria-labelledby="login-title">
+  <aside class="auth-story">
+    <p class="eyebrow"><span></span> PRIVATE EDITORIAL ROOM</p>
+    <h1>당신의 원고가<br><em>책이 되는 곳.</em></h1>
+    <p>정리되지 않은 문장도, 오래 간직한 PDF도 이곳에서는 한 권의 전자책이 됩니다.</p>
+    <div class="auth-book-stack" aria-hidden="true">
+      <span></span><span></span><span></span>
+    </div>
+    <blockquote>“좋은 책은 독자에게 가는 길까지 정성스럽다.”</blockquote>
+  </aside>
+
+  <form class="login-card auth-card" method="post">
+    <div class="auth-card-heading">
+      <span class="auth-index">01</span>
+      <div><p class="section-kicker">WELCOME BACK</p><h2 id="login-title">서재에 로그인</h2></div>
+    </div>
+    <p class="auth-intro">기존 YouTube Shorts 계정으로 같은 서재를 이용할 수 있습니다.</p>
+
+    {% if error %}<div class="message error" role="alert"><span class="message-mark" aria-hidden="true"></span><span>{{ error }}</span></div>{% endif %}
+
+    <label>
+      <span>아이디</span>
+      <input name="username" autocomplete="username" placeholder="아이디 또는 이메일" required autofocus>
+    </label>
+    <label>
+      <span>비밀번호</span>
+      <input name="password" type="password" autocomplete="current-password" placeholder="비밀번호를 입력하세요" required>
+    </label>
+    <button class="primary auth-submit" type="submit">로그인 <span aria-hidden="true">→</span></button>
+    <div class="auth-card-footer">
+      <span>비밀번호가 기억나지 않나요?</span>
+      <a href="{{ url_for('forgot') }}">임시 비밀번호 받기</a>
+    </div>
   </form>
 </section>
 {% endblock %}
-

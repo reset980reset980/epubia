@@ -1,18 +1,91 @@
 {% extends "base.html" %}
-{% block title %}{{ book.title }} - 혜경 전자책 스튜디오{% endblock %}
+{% block title %}{{ book.title }} · {{ site.name }}{% endblock %}
+{% block description %}{{ book.title }}의 준비된 전자책 출판 파일을 확인하세요.{% endblock %}
 {% block content %}
-<section class="detail">
-  <div>
-    <p class="eyebrow">출판 결과</p>
-    <h1>{{ book.title }}</h1>
-    <p class="lead">{{ book.author }} · {{ book.chapter_count }}장 · {{ book.created_at }}</p>
+{% set html_available = book.get('has_html_reader') %}
+{% set commerce = book.commerce %}
+{% set benefit = commerce.consultation_benefit %}
+<nav class="breadcrumb" aria-label="현재 위치">
+  <a href="{{ url_for('index') }}">내 서재</a><span aria-hidden="true">/</span><span>{{ book.title }}</span>
+</nav>
+
+<section class="result-hero" aria-labelledby="book-title">
+  <figure class="result-cover cover-frame">
+    <span class="cover-fallback" aria-hidden="true">
+      <small>{{ site.name_en }}</small>
+      <strong>{{ book.title }}</strong>
+      <em>{{ book.author }}</em>
+    </span>
+    <img class="cover-image" src="/covers/{{ book.book_id }}" alt="{{ book.title }} 표지" data-cover-image>
+    <span class="cover-sheen" aria-hidden="true"></span>
+  </figure>
+
+  <div class="result-copy">
+    <p class="eyebrow"><span></span> PUBLICATION COMPLETE</p>
+    <div class="result-commerce-badges" aria-label="판매 상태">
+      <span class="commerce-badge state-{{ commerce.sale_status }}">{{ {'private':'비공개','published':'판매 공개','archived':'보관됨'}[commerce.sale_status] }}</span>
+      <span class="commerce-badge access-{{ commerce.access }}">{{ '유료' if commerce.access == 'paid' else '무료' }}</span>
+    </div>
+    <h1 id="book-title">{{ book.title }}</h1>
+    <p class="result-author">{{ book.author }}</p>
+    <div class="result-offer">
+      <div><small>판매 가격</small><strong>{% if commerce.access == 'paid' %}{{ "{:,}".format(commerce.price_krw) }}원{% else %}무료 열람{% endif %}</strong></div>
+      <div><small>무료 미리보기</small><strong>{{ commerce.sample_pages }}쪽</strong></div>
+      <div class="result-benefit"><small>운명서재 구매 혜택</small><strong>{% if benefit.type == 'percent' %}상담료 {{ benefit.value }}% 할인{% elif benefit.type == 'fixed' %}상담료 {{ "{:,}".format(benefit.value) }}원 할인{% else %}상담 혜택 없음{% endif %}</strong>{% if benefit.type != 'none' %}<span>구매 후 {{ benefit.valid_days }}일 · 최대 {{ benefit.max_uses }}회{% if benefit.max_discount_krw %} · 최대 {{ "{:,}".format(benefit.max_discount_krw) }}원{% endif %}</span>{% endif %}</div>
+    </div>
+    <dl class="result-meta">
+      <div><dt>구성</dt><dd>{{ book.chapter_count }}장</dd></div>
+      <div><dt>출판일</dt><dd>{{ book.created_at[:10] }}</dd></div>
+      <div><dt>형식</dt><dd>{% if html_available %}HTML{% if book.get('has_html_archive') %} · ZIP{% endif %}{% if book.get('has_epub') %} · EPUB{% endif %}{% if book.get('has_pdf') %} · PDF{% endif %}{% else %}{% if book.get('has_epub') %}EPUB{% endif %}{% if book.get('has_pdf') %}{% if book.get('has_epub') %} · {% endif %}PDF{% endif %}{% if book.get('has_markdown') %}{% if book.get('has_epub') or book.get('has_pdf') %} · {% endif %}MD{% endif %}{% endif %}</dd></div>
+    </dl>
+    <div class="result-primary-actions">
+      {% if html_available %}
+      <a class="primary read-now" href="{{ url_for('read_html_book', book_id=book.book_id) }}">HTML 책 읽기 <span aria-hidden="true">→</span></a>
+      {% if book.get('has_html_archive') %}
+      <a class="secondary-action" href="{{ url_for('download', book_id=book.book_id, kind='html') }}">HTML ZIP 받기 <span aria-hidden="true">↓</span></a>
+      {% endif %}
+      {% else %}
+      <a class="primary read-now" href="{{ url_for('read_book', book_id=book.book_id) }}">웹에서 읽기 <span aria-hidden="true">→</span></a>
+      {% if book.get('has_epub') %}
+      <a class="secondary-action" href="{{ url_for('download', book_id=book.book_id, kind='epub') }}">EPUB 받기 <span aria-hidden="true">↓</span></a>
+      {% endif %}
+      {% endif %}
+    </div>
   </div>
-  <div class="download-grid">
-    <a class="download read" href="{{ url_for('read_book', book_id=book.book_id) }}">웹에서 읽기</a>
-    <a class="download epub" href="{{ url_for('download', book_id=book.book_id, kind='epub') }}">EPUB 다운로드</a>
-    <a class="download pdf" href="{{ url_for('download', book_id=book.book_id, kind='pdf') }}">PDF 다운로드</a>
-    <a class="download md" href="{{ url_for('download', book_id=book.book_id, kind='markdown') }}">Markdown 다운로드</a>
-    <a class="download src" href="{{ url_for('download', book_id=book.book_id, kind='source') }}">추출 텍스트</a>
+
+  <aside class="publication-stamp" aria-label="출판 완료 정보">
+    <span>READY</span>
+    <strong>출판 완료</strong>
+    <p>준비된 전자책 파일을 안전하게 확인할 수 있습니다.</p>
+  </aside>
+</section>
+
+<section class="result-assets" aria-labelledby="assets-title">
+  <div class="section-head result-section-head">
+    <div><p class="section-kicker">PUBLICATION FILES</p><h2 id="assets-title">출판 파일</h2></div>
+    <p>목적에 맞는 형식을 선택하세요.</p>
+  </div>
+  <div class="asset-grid">
+    {% if html_available and book.get('has_html_archive') %}
+    <a class="asset-card html" href="{{ url_for('download', book_id=book.book_id, kind='html') }}">
+      <span class="asset-type">HTML ZIP</span><strong>완성형 웹 전자책</strong><p>레이아웃·검색·목차와 이미지 자산을 그대로 담은 원본 패키지</p><span class="asset-arrow" aria-hidden="true">↓</span>
+    </a>
+    {% endif %}
+    {% if book.get('has_epub') %}<a class="asset-card epub" href="{{ url_for('download', book_id=book.book_id, kind='epub') }}">
+      <span class="asset-type">EPUB</span><strong>전자책 리더용</strong><p>유연한 화면과 목차를 갖춘 표준 전자책</p><span class="asset-arrow" aria-hidden="true">↓</span>
+    </a>{% endif %}
+    {% if book.get('has_pdf') %}<a class="asset-card pdf" href="{{ url_for('download', book_id=book.book_id, kind='pdf') }}">
+      <span class="asset-type">PDF</span><strong>인쇄·공유용</strong><p>원본 또는 생성 판형을 유지한 고정 레이아웃 문서</p><span class="asset-arrow" aria-hidden="true">↓</span>
+    </a>{% endif %}
+    {% if book.get('has_markdown') %}<a class="asset-card markdown" href="{{ url_for('download', book_id=book.book_id, kind='markdown') }}">
+      <span class="asset-type">MD</span><strong>후속 편집용</strong><p>제목과 장이 정리된 Markdown 원고</p><span class="asset-arrow" aria-hidden="true">↓</span>
+    </a>{% endif %}
+    {% if book.get('has_source') %}<a class="asset-card source" href="{{ url_for('download', book_id=book.book_id, kind='source') }}">
+      <span class="asset-type">TXT</span><strong>추출 원문</strong><p>업로드 원고에서 정리한 UTF-8 텍스트</p><span class="asset-arrow" aria-hidden="true">↓</span>
+    </a>{% endif %}
   </div>
 </section>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/library.js', v=app_version) }}" defer></script>
 {% endblock %}

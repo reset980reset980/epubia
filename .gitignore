@@ -3,10 +3,12 @@ venv/
 __pycache__/
 *.pyc
 .pytest_cache/
+.bkit/
+.omc/
 workspace/uploads/*
 workspace/books/*
 workspace/tmp/*
+workspace/site-settings.json
 !workspace/uploads/.gitkeep
 !workspace/books/.gitkeep
 !workspace/tmp/.gitkeep
-

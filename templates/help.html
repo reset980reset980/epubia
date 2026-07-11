@@ -1,16 +1,98 @@
 {% extends "base.html" %}
-{% block title %}도움말 - 혜경 전자책 스튜디오{% endblock %}
+{% block title %}이용 안내 · {{ site.name }}{% endblock %}
+{% block description %}지원 원고와 HTML ZIP 구성, EPUB·PDF·HTML 출판 과정을 안내합니다.{% endblock %}
 {% block content %}
-<section class="doc">
-  <h1>도움말</h1>
-  <h2>지원 파일</h2>
-  <p>디지털 PDF, TXT, Markdown 파일을 지원합니다. 사진으로 스캔된 PDF는 OCR이 필요하므로 현재 버전에서는 텍스트가 추출되지 않을 수 있습니다.</p>
-  <h2>좋은 원고를 만드는 방법</h2>
-  <p>원고 안에 <code>제 1 장</code>, <code>1. 제목</code>, <code># 제목</code> 같은 구분을 넣으면 목차가 더 깔끔하게 생성됩니다.</p>
-  <h2>출력 파일</h2>
-  <p>EPUB은 전자책 리더용, PDF는 인쇄/공유용, Markdown은 후속 편집용입니다.</p>
-  <h2>주의</h2>
-  <p>저작권이 있는 타인의 자료를 올려 재출판하지 마세요. 본인 원고와 출판 권한이 있는 자료만 사용해야 합니다.</p>
+<header class="page-intro help-intro">
+  <div><p class="eyebrow"><span></span> EDITORIAL GUIDE</p><h1>좋은 원고에서<br><em>좋은 전자책으로.</em></h1></div>
+  <p>원고를 조금만 정돈하면 더 정확한 목차와 읽기 좋은 출판본을 얻을 수 있습니다.</p>
+</header>
+
+<section class="guide-feature" aria-labelledby="quick-start-title">
+  <div>
+    <p class="section-kicker">QUICK START</p>
+    <h2 id="quick-start-title">네 단계면 충분합니다</h2>
+  </div>
+  <ol class="guide-steps">
+    <li><span>01</span><strong>원고 준비</strong><p>PDF·TXT·Markdown 원고 또는 완성된 HTML ZIP을 준비하세요.</p></li>
+    <li><span>02</span><strong>정보 확인</strong><p>제목·저자·출판사와 소개글을 채워주세요.</p></li>
+    <li><span>03</span><strong>AI 표지 확인</strong><p>책 소개 또는 원고 앞부분을 반영한 표지를 미리 보고 다시 만들 수 있습니다.</p></li>
+    <li><span>04</span><strong>출판 완료</strong><p>EPUB·PDF 또는 HTML 웹 전자책과 서재 썸네일을 확인하세요.</p></li>
+  </ol>
+</section>
+
+<section class="help-grid">
+  <article class="help-card formats-card">
+    <span class="help-index">A</span>
+    <p class="section-kicker">SUPPORTED FILES</p>
+    <h2>지원하는 원고</h2>
+    <div class="format-list">
+      <div><strong>PDF</strong><span>디지털 문서</span></div>
+      <div><strong>TXT</strong><span>일반 텍스트</span></div>
+      <div><strong>MD</strong><span>Markdown</span></div>
+      <div><strong>ZIP</strong><span>HTML 웹 전자책</span></div>
+    </div>
+    <p>기본 업로드 한도는 100MB이며 설정에서 10~500MB로 변경할 수 있습니다. 사진으로 스캔된 PDF는 제목·소개를 중심으로 표지를 만들고 원본 PDF는 그대로 보존합니다.</p>
+  </article>
+
+  <article class="help-card manuscript-card">
+    <span class="help-index">B</span>
+    <p class="section-kicker">CHAPTER RULES</p>
+    <h2>장을 또렷하게 나누기</h2>
+    <p>아래와 같은 제목을 독립된 줄에 쓰면 목차를 더 정확하게 구성합니다.</p>
+    <div class="chapter-examples" aria-label="장 제목 예시">
+      <code>제 1 장 첫 만남</code>
+      <code>1. 새로운 시작</code>
+      <code># 프롤로그</code>
+      <code>Chapter 1</code>
+    </div>
+  </article>
+
+  <article class="help-card output-card">
+    <span class="help-index">C</span>
+    <p class="section-kicker">OUTPUT GUIDE</p>
+    <h2>출판 파일 활용법</h2>
+    <dl>
+      <div><dt>EPUB</dt><dd>스마트폰과 전자책 리더에서 글자 크기를 바꿔 읽을 때</dd></div>
+      <div><dt>PDF</dt><dd>인쇄하거나 같은 판형 그대로 전달할 때</dd></div>
+      <div><dt>HTML</dt><dd>기존 화면·검색·목차·이미지를 그대로 웹에서 읽을 때</dd></div>
+      <div><dt>Markdown</dt><dd>내용을 다시 편집하거나 다른 도구로 옮길 때</dd></div>
+      <div><dt>추출 원문</dt><dd>PDF에서 읽은 텍스트를 확인하고 교정할 때</dd></div>
+    </dl>
+  </article>
+
+  <article class="help-card rights-card">
+    <span class="help-index">D</span>
+    <p class="section-kicker">PUBLISH RESPONSIBLY</p>
+    <h2>출판 권리를 확인하세요</h2>
+    <p>본인이 쓴 원고 또는 출판 권한을 가진 자료만 업로드해야 합니다. 타인의 저작물을 허가 없이 복제하거나 다시 출판하지 마세요.</p>
+    <div class="rights-note"><span aria-hidden="true">印</span><p><strong>나의 원고, 나의 권리</strong><br>안심하고 출판할 수 있는 자료인지 먼저 확인하세요.</p></div>
+  </article>
+
+  <article class="help-card ai-cover-help-card">
+    <span class="help-index">E</span>
+    <p class="section-kicker">AI COVER</p>
+    <h2>표지와 썸네일은 하나입니다</h2>
+    <p>OpenAI에는 책 소개가 있으면 소개만 보내고, 소개가 없을 때만 원고 앞부분 최대 2,000자를 보냅니다. 글자 없는 배경을 만든 뒤 한글 제목과 저자는 서버 글꼴로 합성하며, 완성된 표지를 EPUB·웹 리더·서재 썸네일에서 함께 사용합니다.</p>
+  </article>
+
+  <article class="help-card html-package-card">
+    <span class="help-index">F</span>
+    <p class="section-kicker">HTML BOOK PACKAGE</p>
+    <h2>HTML 책은 ZIP 하나로</h2>
+    <p>GPT나 편집 도구가 만든 웹 전자책 폴더를 통째로 압축해 올리면 됩니다. 첫 화면은 ZIP 최상위 또는 하나의 포장 폴더 안에 있는 <code>index.html</code>이어야 하며, 내부 연결은 상대 경로를 사용하세요.</p>
+    <div class="html-package-tree" aria-label="HTML ZIP 폴더 구성 예시">
+      <strong>나의-전자책.zip</strong>
+      <span>├─ index.html <em>필수</em></span>
+      <span>├─ css/ · js/ <em>선택</em></span>
+      <span>├─ images/ · fonts/ <em>선택</em></span>
+      <span>└─ text/ · ocr_pages.json <em>선택</em></span>
+    </div>
+    <p class="html-package-caution">인터넷에 연결된 외부 파일보다 CSS·JavaScript·이미지를 ZIP 안에 함께 넣어야 모든 환경에서 같은 화면으로 열립니다. 안전을 위해 압축 해제 후 최대 300MB, 파일 2,000개, 개별 파일 50MB까지 허용합니다.</p>
+  </article>
+</section>
+
+<section class="help-cta">
+  <div><p class="section-kicker">READY TO PUBLISH?</p><h2>이제 첫 장을 펼쳐보세요.</h2></div>
+  <a class="primary" href="{{ url_for('index') }}#publish-workbench">새 전자책 출판 <span aria-hidden="true">→</span></a>
 </section>
 {% endblock %}
-

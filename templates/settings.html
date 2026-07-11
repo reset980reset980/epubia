@@ -1,15 +1,297 @@
 {% extends "base.html" %}
-{% block title %}설정 - 혜경 전자책 스튜디오{% endblock %}
+{% block title %}설정 · {{ site.name }}{% endblock %}
+{% block description %}전자책 스튜디오 환경과 계정 비밀번호를 관리하세요.{% endblock %}
 {% block content %}
-<section class="settings">
-  <h1>설정</h1>
-  <dl>
-    <dt>버전</dt><dd>{{ app_version }}</dd>
-    <dt>허용 사용자</dt><dd>{{ allowed_users }}</dd>
-    <dt>최대 업로드</dt><dd>{{ upload_mb }}MB</dd>
-    <dt>생성 파일 위치</dt><dd>{{ book_dir }}</dd>
-    <dt>기반 아이디어</dt><dd><a href="{{ legacy_repo }}" target="_blank" rel="noreferrer">원본 epubia 프로젝트</a></dd>
-  </dl>
+<header class="page-intro settings-intro">
+  <div><p class="eyebrow"><span></span> STUDIO SETTINGS</p><h1>스튜디오 설정</h1></div>
+  <p>출판 환경을 확인하고, 서재를 안전하게 관리하세요.</p>
+</header>
+
+<section class="settings-layout">
+  <article class="settings-card studio-status" aria-labelledby="studio-status-title">
+    <div class="settings-card-head">
+      <span class="settings-number">01</span>
+      <div><p class="section-kicker">ENVIRONMENT</p><h2 id="studio-status-title">출판 환경</h2></div>
+    </div>
+    <dl class="settings-list">
+      <div><dt>현재 버전</dt><dd><span class="status-dot"></span>{{ app_version }}</dd></div>
+      <div><dt>허용 사용자</dt><dd>{{ allowed_users }}</dd></div>
+      <div><dt>최대 업로드</dt><dd>{{ upload_mb }}MB</dd></div>
+      <div><dt>생성 파일 위치</dt><dd><code>{{ book_dir }}</code></dd></div>
+      <div><dt>기반 프로젝트</dt><dd><a href="{{ legacy_repo }}" target="_blank" rel="noreferrer">원본 epubia 살펴보기 <span aria-hidden="true">↗</span></a></dd></div>
+    </dl>
+  </article>
+
+  {% if current_user %}
+  <article class="settings-card account-security" aria-labelledby="password-title">
+    <div class="settings-card-head">
+      <span class="settings-number">02</span>
+      <div><p class="section-kicker">ACCOUNT SECURITY</p><h2 id="password-title">비밀번호 변경</h2></div>
+    </div>
+    <div class="account-chip"><span aria-hidden="true">{{ current_user[:1]|upper }}</span><div><small>현재 로그인</small><strong>{{ current_user }}</strong></div></div>
+    <p class="hint">변경한 비밀번호는 YouTube Shorts 로그인에도 동일하게 적용됩니다.</p>
+    <form class="pw-form security-form" method="post" action="/change-password">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label>
+        <span>현재 비밀번호</span>
+        <input name="current_password" type="password" autocomplete="current-password" required>
+      </label>
+      <div class="password-grid">
+        <label>
+          <span>새 비밀번호</span>
+          <input name="new_password" type="password" autocomplete="new-password" minlength="8" placeholder="최소 8자" required>
+        </label>
+        <label>
+          <span>새 비밀번호 확인</span>
+          <input name="confirm_password" type="password" autocomplete="new-password" minlength="8" placeholder="한 번 더 입력" required>
+        </label>
+      </div>
+      <div class="security-submit">
+        <p><span aria-hidden="true">◇</span> 영문, 숫자를 섞은 8자 이상의 비밀번호를 권장합니다.</p>
+        <button class="primary" type="submit">비밀번호 변경 <span aria-hidden="true">→</span></button>
+      </div>
+    </form>
+  </article>
+  {% endif %}
+
+  {% if is_admin %}
+  <article class="settings-card publishing-settings" id="publishing-settings" aria-labelledby="publishing-settings-title">
+    <div class="settings-card-head">
+      <span class="settings-number">03</span>
+      <div>
+        <p class="section-kicker">PUBLISHING CONTROL</p>
+        <h2 id="publishing-settings-title">출판 설정</h2>
+        <p class="settings-card-description">원고 업로드 용량과 OpenAI 자동 표지 생성 방식을 관리합니다.</p>
+      </div>
+    </div>
+    <form class="publishing-settings-form" method="post" action="{{ url_for('update_publishing_settings') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="publishing-settings-grid">
+        <label>
+          <span>원고 업로드 한도</span>
+          <div class="setting-unit-input"><input name="upload_limit_mb" type="number" min="{{ upload_min_mb }}" max="{{ upload_max_mb }}" step="1" value="{{ upload_mb }}" required><strong>MB</strong></div>
+          <small>{{ upload_min_mb }}~{{ upload_max_mb }}MB 사이에서 변경할 수 있습니다.</small>
+        </label>
+        <label>
+          <span>OpenAI 이미지 모델</span>
+          <select name="ai_cover_model" required>
+            {% for model in ai_cover_models %}<option value="{{ model }}"{% if site.ai_cover_model == model %} selected{% endif %}>{{ model }}</option>{% endfor %}
+          </select>
+          <small>기본값은 최신 표지 생성 모델인 gpt-image-2입니다.</small>
+        </label>
+        <label>
+          <span>표지 생성 품질</span>
+          <select name="ai_cover_quality" required>
+            {% for quality in ai_cover_qualities %}<option value="{{ quality }}"{% if site.ai_cover_quality == quality %} selected{% endif %}>{{ {'low':'빠른 초안','medium':'균형 품질','high':'고품질'}[quality] }}</option>{% endfor %}
+          </select>
+          <small>고품질일수록 생성 시간과 API 사용량이 늘어납니다.</small>
+        </label>
+      </div>
+      <label class="setting-toggle">
+        <input name="ai_cover_enabled" type="checkbox" value="1"{% if site.ai_cover_enabled == '1' %} checked{% endif %}>
+        <span><strong>책 소개 또는 원고 앞부분으로 AI 표지 자동 생성</strong><small>책 소개를 우선 사용하고, 없을 때만 앞부분 최대 2,000자를 참고합니다.</small></span>
+      </label>
+      <div class="publishing-api-status{% if ai_cover_available %} is-ready{% endif %}">
+        <span aria-hidden="true"></span>
+        <p>{% if ai_cover_available %}<strong>OpenAI API 연결 준비됨</strong> API 키는 서버 환경변수에서 안전하게 불러옵니다.{% else %}<strong>OpenAI API 키 없음</strong> 키를 설정하기 전에는 한글 기본 표지로 자동 대체됩니다.{% endif %}</p>
+      </div>
+      <div class="appearance-submit">
+        <p>저장한 업로드 한도는 다음 원고부터 즉시 적용됩니다.</p>
+        <button class="primary" type="submit">출판 설정 저장 <span aria-hidden="true">→</span></button>
+      </div>
+    </form>
+  </article>
+
+  <article class="settings-card commerce-settings" id="book-commerce" aria-labelledby="book-commerce-title">
+    <div class="settings-card-head commerce-settings-head">
+      <span class="settings-number">04</span>
+      <div>
+        <p class="section-kicker">CATALOG &amp; BENEFITS</p>
+        <h2 id="book-commerce-title">책별 판매 설정</h2>
+        <p class="settings-card-description">무료·유료 공개 범위와 미리보기, 운명서재 상담 혜택을 책마다 지정합니다.</p>
+      </div>
+      <div class="commerce-legend" aria-label="판매 상태 안내">
+        <span><i class="status-pip is-public"></i>판매 공개</span>
+        <span><i class="status-pip is-private"></i>비공개</span>
+        <span><i class="status-pip is-archived"></i>보관됨</span>
+      </div>
+    </div>
+
+    <div class="commerce-safety-note">
+      <span aria-hidden="true">◇</span>
+      <p><strong>기존 책은 자동으로 공개되지 않습니다.</strong> 판매 공개를 선택한 책만 외부 카탈로그에 보이며, 보관은 파일을 삭제하지 않고 판매 노출만 멈춥니다.</p>
+    </div>
+
+    {% if commerce_books %}
+    <div class="commerce-book-list">
+      {% for book in commerce_books %}
+      {% set commerce = book.commerce %}
+      {% set benefit = commerce.consultation_benefit %}
+      <section class="commerce-book{% if commerce.sale_status == 'archived' %} is-archived{% endif %}" aria-labelledby="commerce-title-{{ book.book_id }}">
+        <header class="commerce-book-header">
+          <img src="{{ url_for('book_cover', book_id=book.book_id) }}" alt="" loading="lazy">
+          <div>
+            <span class="commerce-book-index">BOOK {{ '%02d'|format(loop.index) }}</span>
+            <h3 id="commerce-title-{{ book.book_id }}">{{ book.title }}</h3>
+            <p>{{ book.author }} · {{ book.created_at[:10] }}</p>
+          </div>
+          <div class="commerce-current-badges" aria-label="현재 판매 설정">
+            <span class="commerce-badge state-{{ commerce.sale_status }}">{{ {'private':'비공개','published':'판매 공개','archived':'보관됨'}[commerce.sale_status] }}</span>
+            <span class="commerce-badge access-{{ commerce.access }}">{{ '유료' if commerce.access == 'paid' else '무료' }}</span>
+          </div>
+        </header>
+
+        <form class="commerce-book-form" method="post" action="{{ url_for('update_book_commerce', book_id=book.book_id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <fieldset>
+            <legend>판매와 미리보기</legend>
+            <div class="commerce-field-grid commerce-sale-grid">
+              <label><span>판매 상태</span><select name="sale_status" required>
+                <option value="private"{% if commerce.sale_status == 'private' %} selected{% endif %}>비공개 · 관리자만 보기</option>
+                <option value="published"{% if commerce.sale_status == 'published' %} selected{% endif %}>판매 공개 · 외부 서재 노출</option>
+                <option value="archived"{% if commerce.sale_status == 'archived' %} selected{% endif %}>보관됨 · 파일만 유지</option>
+              </select></label>
+              <label><span>이용 방식</span><select name="access" required>
+                <option value="free"{% if commerce.access == 'free' %} selected{% endif %}>무료 전자책</option>
+                <option value="paid"{% if commerce.access == 'paid' %} selected{% endif %}>유료 전자책</option>
+              </select></label>
+              <label><span>판매 가격</span><div class="commerce-unit"><input name="price_krw" type="number" min="0" max="100000000" step="1" value="{{ commerce.price_krw }}" required><strong>원</strong></div></label>
+              <label><span>무료 샘플</span><div class="commerce-unit"><input name="sample_pages" type="number" min="1" max="500" step="1" value="{{ commerce.sample_pages }}" required><strong>쪽</strong></div></label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>구매자 상담 혜택</legend>
+            <div class="commerce-field-grid commerce-benefit-grid">
+              <label><span>할인 방식</span><select name="benefit_type" required>
+                <option value="none"{% if benefit.type == 'none' %} selected{% endif %}>혜택 없음</option>
+                <option value="percent"{% if benefit.type == 'percent' %} selected{% endif %}>상담료 비율 할인 (%)</option>
+                <option value="fixed"{% if benefit.type == 'fixed' %} selected{% endif %}>상담료 정액 할인 (원)</option>
+              </select></label>
+              <label><span>할인 값</span><input name="benefit_value" type="number" min="0" max="10000000" step="1" value="{{ benefit.value }}" required></label>
+              <label><span>최대 할인</span><div class="commerce-unit"><input name="benefit_max_discount_krw" type="number" min="0" max="10000000" step="1" value="{{ benefit.max_discount_krw }}" required><strong>원</strong></div></label>
+              <label><span>사용 가능 횟수</span><div class="commerce-unit"><input name="benefit_max_uses" type="number" min="1" max="100" step="1" value="{{ benefit.max_uses }}" required><strong>회</strong></div></label>
+              <label><span>구매 후 유효기간</span><div class="commerce-unit"><input name="benefit_valid_days" type="number" min="1" max="3650" step="1" value="{{ benefit.valid_days }}" required><strong>일</strong></div></label>
+            </div>
+          </fieldset>
+
+          <div class="commerce-form-submit">
+            <p>유료 책은 가격이 있어야 공개할 수 있습니다.</p>
+            <button class="primary" type="submit">판매 설정 저장 <span aria-hidden="true">→</span></button>
+          </div>
+        </form>
+
+        <div class="commerce-archive-row">
+          <p><strong>{{ '보관을 해제할 수 있습니다.' if commerce.sale_status == 'archived' else '서재에서 안전 삭제' }}</strong> {{ '이전 판매 상태로 되돌리며 파일은 그대로 유지합니다.' if commerce.sale_status == 'archived' else '구매 이력과 모든 출판 파일을 보존한 채 노출만 중단합니다.' }}</p>
+          {% if commerce.sale_status == 'archived' %}
+          <form method="post" action="{{ url_for('restore_book', book_id=book.book_id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="archive-action restore" type="submit">보관 해제</button></form>
+          {% else %}
+          <form method="post" action="{{ url_for('archive_book', book_id=book.book_id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="archive-action" type="submit">서재에서 삭제·보관</button></form>
+          {% endif %}
+        </div>
+      </section>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="commerce-empty"><span aria-hidden="true">冊</span><div><strong>설정할 출판본이 없습니다.</strong><p>첫 책을 출판하면 이곳에서 판매 방식을 지정할 수 있습니다.</p></div></div>
+    {% endif %}
+  </article>
+
+  <article class="settings-card appearance-settings" id="appearance-settings" aria-labelledby="appearance-title">
+    <div class="settings-card-head">
+      <span class="settings-number">05</span>
+      <div>
+        <p class="section-kicker">FRONT EDITOR</p>
+        <h2 id="appearance-title">프론트 화면 편집</h2>
+        <p class="settings-card-description">상단 로고 영역부터 홈 메인, 하단 안내 문구까지 직접 바꿀 수 있습니다.</p>
+      </div>
+    </div>
+
+    <nav class="appearance-menu" aria-label="프론트 화면 편집 메뉴">
+      <a href="#appearance-header"><span>01</span><strong>상단 바 설정</strong><small>로고 옆 제목과 설명</small></a>
+      <a href="#appearance-home"><span>02</span><strong>홈 메인 설정</strong><small>첫 화면 제목과 소개</small></a>
+      <a href="#appearance-footer"><span>03</span><strong>하단 바 설정</strong><small>푸터 제목과 문구</small></a>
+      <a href="#appearance-colors"><span>04</span><strong>색상 설정</strong><small>강조색과 버튼색</small></a>
+    </nav>
+
+    <div class="appearance-editor-layout">
+      <form class="appearance-form" method="post" action="{{ url_for('update_appearance') }}" data-appearance-form>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <section class="appearance-panel" id="appearance-header" aria-labelledby="appearance-header-title">
+          <div class="appearance-panel-head">
+            <span aria-hidden="true">01</span>
+            <div><h3 id="appearance-header-title">상단 바 설정</h3><p>모든 화면 맨 위에 고정해서 보여줄 브랜드 정보를 입력하세요.</p></div>
+          </div>
+          <div class="appearance-grid header-fields">
+            <label><span>상단 제목</span><input name="header_title" value="{{ site.header_title }}" maxlength="40" required data-site-field="header_title" data-preview-fallback="상단 제목"></label>
+            <label><span>상단 보조 문구 <small>(선택)</small></span><input name="header_subtitle" value="{{ site.header_subtitle }}" maxlength="60" data-site-field="header_subtitle" data-allow-empty="true"></label>
+            <label class="brand-mark-field"><span>브랜드 글자</span><input name="brand_mark" value="{{ site.brand_mark }}" maxlength="2" required data-site-field="brand_mark" data-preview-fallback="冊"></label>
+          </div>
+        </section>
+
+        <section class="appearance-panel" id="appearance-home" aria-labelledby="appearance-home-title">
+          <div class="appearance-panel-head">
+            <span aria-hidden="true">02</span>
+            <div><h3 id="appearance-home-title">홈 메인 설정</h3><p>홈과 로그인 화면의 서비스 이름, 첫 화면의 제목과 소개를 편집합니다.</p></div>
+          </div>
+          <div class="appearance-grid">
+            <label><span>서비스명</span><input name="name" value="{{ site.name }}" maxlength="40" required data-site-field="name" data-preview-fallback="서비스명"></label>
+            <label><span>영문명</span><input name="name_en" value="{{ site.name_en }}" maxlength="60" required data-site-field="name_en" data-preview-fallback="DIGITAL EDITIONS"></label>
+            <label><span>메인 상단 문구</span><input name="hero_kicker" value="{{ site.hero_kicker }}" maxlength="60" required data-site-field="hero_kicker" data-preview-fallback="DIGITAL PRESS"></label>
+          </div>
+          <div class="appearance-grid">
+            <label><span>메인 제목 첫 줄</span><input name="hero_title" value="{{ site.hero_title }}" maxlength="60" required data-site-field="hero_title" data-preview-fallback="메인 제목"></label>
+            <label><span>메인 제목 강조 줄</span><input name="hero_title_accent" value="{{ site.hero_title_accent }}" maxlength="60" required data-site-field="hero_title_accent" data-preview-fallback="강조 제목"></label>
+          </div>
+          <label><span>메인 소개 문구</span><textarea name="hero_description" maxlength="240" required data-site-field="hero_description" data-preview-fallback="서비스를 소개하는 문구가 여기에 표시됩니다.">{{ site.hero_description }}</textarea></label>
+        </section>
+
+        <section class="appearance-panel" id="appearance-footer" aria-labelledby="appearance-footer-title">
+          <div class="appearance-panel-head">
+            <span aria-hidden="true">03</span>
+            <div><h3 id="appearance-footer-title">하단 바 설정</h3><p>모든 화면 맨 아래에 표시할 서비스 제목과 짧은 안내 문구입니다.</p></div>
+          </div>
+          <div class="appearance-grid">
+            <label><span>하단 제목</span><input name="footer_title" value="{{ site.footer_title }}" maxlength="40" required data-site-field="footer_title" data-preview-fallback="하단 제목"></label>
+            <label><span>하단 문구 <small>(선택)</small></span><input name="footer_tagline" value="{{ site.footer_tagline }}" maxlength="80" data-site-field="footer_tagline" data-allow-empty="true"></label>
+          </div>
+        </section>
+
+        <section class="appearance-panel" id="appearance-colors" aria-labelledby="appearance-colors-title">
+          <div class="appearance-panel-head">
+            <span aria-hidden="true">04</span>
+            <div><h3 id="appearance-colors-title">색상 설정</h3><p>링크와 포인트에 쓰이는 강조색, 주요 실행 버튼의 색상을 고르세요.</p></div>
+          </div>
+          <div class="appearance-grid color-grid">
+            <label><span>강조색</span><input name="accent_color" type="color" value="{{ site.accent_color }}" required data-site-field="accent_color"></label>
+            <label><span>버튼색</span><input name="primary_color" type="color" value="{{ site.primary_color }}" required data-site-field="primary_color"></label>
+          </div>
+        </section>
+
+        <div class="appearance-submit">
+          <p>저장하면 상단 바, 로그인, 홈 메인과 하단 바에 즉시 적용됩니다.</p>
+          <button class="primary" type="submit">화면 설정 저장 <span aria-hidden="true">→</span></button>
+        </div>
+      </form>
+
+      <aside class="appearance-preview" aria-label="프론트 화면 실시간 미리보기" data-appearance-preview style="--preview-accent: {{ site.accent_color }}; --preview-primary: {{ site.primary_color }};">
+        <div class="preview-label"><span></span> 실시간 미리보기</div>
+        <div class="preview-header"><span data-preview="brand_mark">{{ site.brand_mark }}</span><div><small data-preview="header_subtitle">{{ site.header_subtitle }}</small><strong data-preview="header_title">{{ site.header_title }}</strong></div></div>
+        <div class="preview-hero">
+          <div class="preview-service-meta"><small data-preview="name_en">{{ site.name_en }}</small><strong data-preview="name">{{ site.name }}</strong></div>
+          <small data-preview="hero_kicker">{{ site.hero_kicker }}</small>
+          <h3><span data-preview="hero_title">{{ site.hero_title }}</span><em data-preview="hero_title_accent">{{ site.hero_title_accent }}</em></h3>
+          <p data-preview="hero_description">{{ site.hero_description }}</p>
+          <b>PDF 즉시 출판</b>
+        </div>
+        <div class="preview-footer"><strong data-preview="footer_title">{{ site.footer_title }}</strong><span data-preview="footer_tagline">{{ site.footer_tagline }}</span></div>
+      </aside>
+    </div>
+  </article>
+  {% endif %}
 </section>
 {% endblock %}
-
+{% block scripts %}
+{% if is_admin %}<script src="{{ url_for('static', filename='js/settings.js', v=app_version) }}" defer></script>{% endif %}
+{% endblock %}

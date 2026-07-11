@@ -1,0 +1,139 @@
+:root {
+  color-scheme: light;
+  --ink: #18201d;
+  --muted: #6d746f;
+  --canvas: #e9ebe7;
+  --paper: #fbfaf5;
+  --forest: #183f36;
+  --forest-soft: #28594e;
+  --brass: #b9934b;
+  --line: rgba(24, 32, 29, .15);
+  --shadow: 0 22px 65px rgba(22, 32, 28, .12);
+  font-family: Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 6.5rem; }
+body { margin: 0; color: var(--ink); background: var(--canvas); }
+button, a { -webkit-tap-highlight-color: transparent; }
+button { font: inherit; }
+img { max-width: 100%; }
+
+.skip-link {
+  position: fixed;
+  z-index: 100;
+  top: .7rem;
+  left: .7rem;
+  padding: .75rem 1rem;
+  color: #fff;
+  background: var(--forest);
+  transform: translateY(-150%);
+}
+.skip-link:focus { transform: none; }
+.reading-progress { position: fixed; z-index: 90; inset: 0 auto auto 0; width: 0; height: 3px; background: var(--brass); }
+
+.reader-bar {
+  position: sticky;
+  z-index: 60;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 78px;
+  padding: .7rem clamp(1rem, 3vw, 2.4rem);
+  color: #f8f7f2;
+  border-bottom: 1px solid rgba(255,255,255,.12);
+  background: rgba(16, 45, 39, .96);
+  backdrop-filter: blur(14px);
+}
+.reader-identity { display: flex; align-items: center; gap: .85rem; min-width: 0; }
+.reader-mark { display: grid; flex: 0 0 42px; width: 42px; height: 42px; place-items: center; color: var(--forest); background: var(--brass); font-family: Georgia, serif; font-size: 1.2rem; }
+.reader-eyebrow { margin: 0 0 .15rem; color: #d5c18d; font-size: .62rem; font-weight: 800; letter-spacing: .16em; }
+.reader-bar h1 { max-width: 48vw; margin: 0; overflow: hidden; font-family: "Noto Serif KR", "Nanum Myeongjo", serif; font-size: 1.05rem; text-overflow: ellipsis; white-space: nowrap; }
+.reader-actions { display: flex; align-items: center; gap: .7rem; }
+.sample-pill { padding: .45rem .75rem; border: 1px solid rgba(255,255,255,.25); border-radius: 999px; color: #f4e8c7; font-size: .75rem; font-weight: 700; }
+.toc-trigger, .toc-close { min-width: 44px; min-height: 44px; color: inherit; border: 1px solid rgba(255,255,255,.28); background: transparent; cursor: pointer; }
+.toc-trigger { display: none; padding: 0 .8rem; }
+.toc-close { display: none; color: var(--ink); border-color: var(--line); font-size: 1.6rem; }
+
+.reader-layout { display: grid; grid-template-columns: 270px minmax(0, 820px); gap: clamp(1.5rem, 3vw, 3.2rem); justify-content: center; padding: 2.5rem clamp(1rem, 3vw, 2.5rem) 5rem; }
+.sample-toc { position: sticky; top: 104px; align-self: start; max-height: calc(100vh - 130px); overflow: auto; border: 1px solid var(--line); background: rgba(251, 250, 245, .85); }
+.toc-heading { display: flex; align-items: start; justify-content: space-between; padding: 1.35rem 1.2rem 1rem; border-bottom: 1px solid var(--line); }
+.toc-heading p { margin: 0 0 .3rem; color: var(--brass); font-size: .62rem; font-weight: 800; letter-spacing: .14em; }
+.toc-heading h2 { margin: 0; font-family: "Noto Serif KR", "Nanum Myeongjo", serif; font-size: 1.15rem; }
+.sample-toc nav { padding: .45rem 0; }
+.sample-toc nav a { display: grid; grid-template-columns: 3.3rem 1fr; gap: .7rem; align-items: center; padding: .65rem 1rem; color: inherit; text-decoration: none; border-left: 3px solid transparent; }
+.sample-toc nav a:hover, .sample-toc nav a[aria-current="true"] { color: var(--forest); border-left-color: var(--brass); background: rgba(185, 147, 75, .09); }
+.toc-number { color: var(--brass); font-family: Georgia, serif; font-size: .78rem; }
+.toc-preview { position: relative; display: block; width: 3.1rem; aspect-ratio: 3 / 4; overflow: hidden; border: 1px solid var(--line); background: #fff; }
+.toc-preview img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.toc-preview b { position: absolute; right: 0; bottom: 0; padding: .08rem .25rem; color: #fff; background: rgba(17, 35, 30, .82); font-family: Georgia, serif; font-size: .56rem; font-weight: 500; }
+.toc-copy { min-width: 0; }
+.toc-copy strong { display: block; overflow: hidden; font-family: "Noto Serif KR", "Nanum Myeongjo", serif; font-size: .82rem; text-overflow: ellipsis; white-space: nowrap; }
+.toc-copy small { color: var(--muted); font-size: .66rem; }
+.toc-lock-note { display: flex; gap: .7rem; margin: .8rem; padding: .9rem; color: #efe8d8; background: var(--forest); }
+.toc-lock-note span { color: var(--brass); font-size: 1.2rem; }
+.toc-lock-note p { margin: 0; font-size: .7rem; line-height: 1.6; }
+
+.sample-pages { min-width: 0; }
+.sample-cover, .sample-page, .sample-gate { margin: 0 0 2rem; border: 1px solid var(--line); background: var(--paper); box-shadow: var(--shadow); }
+.sample-cover { display: grid; grid-template-columns: 1fr minmax(170px, 280px); gap: clamp(2rem, 5vw, 4rem); align-items: center; min-height: 520px; padding: clamp(2rem, 5vw, 4.5rem); overflow: hidden; }
+.cover-kicker, .gate-kicker { margin: 0 0 1rem; color: var(--brass); font-size: .68rem; font-weight: 900; letter-spacing: .18em; }
+.sample-cover h2 { max-width: 12ch; margin: 0; font-family: "Noto Serif KR", "Nanum Myeongjo", serif; font-size: clamp(2.1rem, 5vw, 4.2rem); line-height: 1.16; letter-spacing: -.05em; }
+.cover-author { margin: 1.1rem 0 0; font-family: "Noto Serif KR", "Nanum Myeongjo", serif; font-size: 1.05rem; }
+.cover-description { max-width: 42rem; margin: 2rem 0; color: var(--muted); line-height: 1.8; word-break: keep-all; }
+.cover-facts { display: flex; gap: 2rem; margin: 2rem 0 0; }
+.cover-facts div { padding-left: .8rem; border-left: 2px solid var(--brass); }
+.cover-facts dt { color: var(--muted); font-size: .68rem; }
+.cover-facts dd { margin: .22rem 0 0; font-weight: 800; }
+.sample-cover img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; box-shadow: 16px 18px 0 rgba(24, 63, 54, .13); }
+
+.sample-page { padding: clamp(1.4rem, 4vw, 3.5rem); }
+.page-heading { margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--line); }
+.page-heading p { margin: 0 0 .35rem; color: var(--brass); font-family: Georgia, serif; font-size: .72rem; letter-spacing: .1em; }
+.page-heading h2 { margin: 0; font-family: "Noto Serif KR", "Nanum Myeongjo", serif; font-size: clamp(1.35rem, 3vw, 2rem); line-height: 1.4; }
+.ocr-copy { font-family: "Noto Serif KR", "Nanum Myeongjo", Batang, serif; font-size: clamp(1rem, 1.7vw, 1.12rem); line-height: 2; word-break: keep-all; }
+.ocr-copy p { margin: 0 0 1.45em; }
+.scan-compare { margin-top: 2.5rem; border-top: 1px solid var(--line); }
+.scan-compare summary { padding: 1rem 0; color: var(--forest-soft); font-size: .82rem; font-weight: 800; cursor: pointer; }
+.scan-compare img, .pdf-sheet { display: block; width: 100%; height: auto; background: #fff; }
+.pdf-page { padding: clamp(.6rem, 2vw, 1.5rem); }
+.pdf-page .page-heading { margin: .8rem .8rem 1.2rem; }
+
+.sample-gate { padding: clamp(2rem, 6vw, 5rem); color: #f8f5ed; background: var(--forest); text-align: center; }
+.sample-gate h2 { margin: 0; font-family: "Noto Serif KR", "Nanum Myeongjo", serif; font-size: clamp(1.8rem, 4vw, 3rem); }
+.sample-gate > p:not(.gate-kicker) { max-width: 36rem; margin: 1rem auto 2rem; color: #cad7d2; line-height: 1.7; }
+.sample-gate a { display: inline-flex; min-height: 50px; align-items: center; padding: 0 1.4rem; color: var(--forest); background: var(--brass); font-weight: 900; text-decoration: none; }
+.toc-scrim { display: none; }
+
+@media (max-width: 760px) {
+  html { scroll-padding-top: 5.4rem; }
+  body.toc-open { overflow: hidden; }
+  .reader-bar { min-height: 66px; padding: .55rem .7rem; }
+  .reader-mark { flex-basis: 36px; width: 36px; height: 36px; }
+  .reader-eyebrow, .sample-pill { display: none; }
+  .reader-bar h1 { max-width: 52vw; font-size: .9rem; }
+  .toc-trigger { display: inline-flex; align-items: center; justify-content: center; }
+  .reader-layout { display: block; padding: .75rem .65rem 3rem; }
+  .sample-toc { position: fixed; z-index: 80; inset: 0 0 0 auto; width: min(88vw, 360px); max-height: none; background: var(--paper); transform: translateX(102%); transition: transform .24s ease; }
+  .sample-toc.is-open { transform: none; }
+  .toc-close { display: grid; place-items: center; }
+  .toc-scrim { position: fixed; z-index: 70; inset: 0; display: block; background: rgba(12, 21, 18, .58); }
+  .toc-scrim[hidden] { display: none; }
+  .sample-cover, .sample-page, .sample-gate { margin-bottom: .75rem; box-shadow: none; }
+  .sample-cover { display: flex; min-height: 0; padding: 2rem 1.25rem 2.4rem; flex-direction: column-reverse; align-items: stretch; }
+  .sample-cover img { width: min(68vw, 260px); align-self: center; }
+  .sample-cover h2 { font-size: 2.15rem; }
+  .cover-description { margin: 1.2rem 0; }
+  .cover-facts { gap: 1rem; }
+  .sample-page { padding: 1.15rem; }
+  .pdf-page { padding: .4rem; }
+  .pdf-page .page-heading { margin: .8rem; }
+  .ocr-copy { line-height: 1.88; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .sample-toc { transition: none; }
+}
