@@ -3,18 +3,21 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#10271f">
   <meta name="referrer" content="no-referrer">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>{{ book.title }} · {% if is_full %}전체 읽기{% else %}무료 미리보기{% endif %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/public-sample.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/public-sample.css', v=app_version) }}">
 </head>
-<body>
+<body data-book-reader>
   <a class="skip-link" href="#reader-content">본문으로 이동</a>
-  <div class="reading-progress" data-reading-progress aria-hidden="true"></div>
+  <div class="reading-progress" data-reading-progress aria-hidden="true"><span></span></div>
 
   <header class="reader-bar">
     <div class="reader-identity">
-      <span class="reader-mark" aria-hidden="true">慧</span>
+      <a class="reader-home" href="{{ url_for('index') }}" aria-label="전자책 서재로 돌아가기">
+        <span class="reader-mark" aria-hidden="true">慧</span>
+      </a>
       <div>
         <p class="reader-eyebrow">HYE GYEONG DIGITAL EDITIONS</p>
         <h1>{{ book.title }}</h1>
@@ -24,6 +27,9 @@
       <span class="sample-pill">
         {% if is_full %}전체 {{ total_pages }}쪽{% else %}{{ visible_pages }}쪽 무료 미리보기{% endif %}
       </span>
+      <button class="mode-trigger" type="button" data-reader-mode-toggle aria-pressed="true">
+        <span class="mode-icon" aria-hidden="true">▤</span><span data-mode-label>연속 읽기</span>
+      </button>
       <button class="toc-trigger" type="button" data-toc-open aria-controls="sample-toc" aria-expanded="false">
         페이지
       </button>
@@ -42,7 +48,7 @@
       </div>
       <nav>
         {% for page in pages %}
-          <a href="#page-{{ page.page }}" data-toc-link>
+          <a href="#page-{{ page.page }}" data-toc-link data-reader-target="{{ loop.index }}">
             {% if page.image_url %}
               <span class="toc-preview"><img src="{{ page.image_url }}" alt="" loading="lazy" decoding="async"><b>{{ "%02d"|format(page.page) }}</b></span>
             {% else %}
@@ -63,57 +69,86 @@
       {% endif %}
     </aside>
 
-    <main id="reader-content" class="sample-pages">
-      <section class="sample-cover" aria-labelledby="sample-title">
-        <div class="cover-copy">
-          <p class="cover-kicker">{% if is_full %}DIGITAL EDITION{% else %}COMPLIMENTARY PREVIEW{% endif %}</p>
-          <h2 id="sample-title">{{ book.title }}</h2>
-          <p class="cover-author">{{ book.author or '저자 미상' }}</p>
-          {% if book.description %}<p class="cover-description">{{ book.description }}</p>{% endif %}
-          <dl class="cover-facts">
-            <div><dt>공개 범위</dt><dd>{% if is_full %}전체 {{ total_pages }}쪽{% else %}앞 {{ visible_pages }}쪽{% endif %}</dd></div>
-            <div><dt>형식</dt><dd>{{ format_label }}</dd></div>
-          </dl>
+    <main id="reader-content" class="reader-workspace" tabindex="-1">
+      <section class="book-stage-shell" data-reader-stage hidden aria-label="책 넘김 리더">
+        <div class="book-desk">
+          <div class="desk-glow" aria-hidden="true"></div>
+          <button class="page-edge page-edge-prev" type="button" data-reader-prev aria-label="이전 장으로 넘기기">
+            <span aria-hidden="true">‹</span>
+          </button>
+          <div class="book-stage" data-book-stage aria-live="off">
+            <span class="book-spine" aria-hidden="true"></span>
+          </div>
+          <button class="page-edge page-edge-next" type="button" data-reader-next aria-label="다음 장으로 넘기기">
+            <span aria-hidden="true">›</span>
+          </button>
+          <p class="turn-hint" data-turn-hint><span aria-hidden="true">↔</span> 모서리를 끌거나 좌우 방향키로 넘겨보세요</p>
         </div>
-        {% if cover_url %}
-          <img src="{{ cover_url }}" alt="{{ book.title }} 표지" width="360" height="480">
-        {% endif %}
+
+        <nav class="book-navigation" aria-label="책 페이지 이동">
+          <button type="button" data-reader-prev aria-label="이전 페이지"><span aria-hidden="true">←</span><span>이전</span></button>
+          <div class="book-position">
+            <strong data-reader-position>표지</strong>
+            <span data-reader-counter>1 / {{ visible_pages + (2 if not is_full else 1) }}</span>
+            <i aria-hidden="true"><b data-reader-progress></b></i>
+          </div>
+          <button type="button" data-reader-next aria-label="다음 페이지"><span>다음</span><span aria-hidden="true">→</span></button>
+        </nav>
       </section>
+      <p class="reader-announcer sr-only" data-reader-status aria-live="polite" aria-atomic="true"></p>
 
-      {% for page in pages %}
-        <article class="sample-page{% if page.kind == 'pdf' %} pdf-page{% endif %}" id="page-{{ page.page }}" data-reader-page>
-          <header class="page-heading">
-            <p>PAGE {{ "%03d"|format(page.page) }} / {{ "%03d"|format(total_pages) }}</p>
-            <h2>{{ page.title or (page.page ~ '쪽') }}</h2>
-          </header>
-
-          {% if page.kind == 'pdf' %}
-            <img class="pdf-sheet" src="{{ page.image_url }}" alt="{{ page.page }}쪽 원본" loading="{% if loop.index <= 2 %}eager{% else %}lazy{% endif %}" decoding="async">
-          {% else %}
-            <div class="ocr-copy">
-              {% for paragraph in page.paragraphs %}<p>{{ paragraph }}</p>{% endfor %}
-            </div>
-            {% if page.image_url %}
-              <details class="scan-compare">
-                <summary>원본 스캔과 대조하기</summary>
-                <img src="{{ page.image_url }}" alt="{{ page.page }}쪽 원본 스캔" loading="lazy" decoding="async">
-              </details>
-            {% endif %}
+      <div class="sample-pages" data-reader-flow>
+        <section class="sample-cover reader-leaf" data-reader-leaf data-reader-label="표지" aria-labelledby="sample-title">
+          <div class="cover-copy">
+            <p class="cover-kicker">{% if is_full %}DIGITAL EDITION{% else %}COMPLIMENTARY PREVIEW{% endif %}</p>
+            <h2 id="sample-title">{{ book.title }}</h2>
+            <p class="cover-author">{{ book.author or '저자 미상' }}</p>
+            {% if book.description %}<p class="cover-description">{{ book.description }}</p>{% endif %}
+            <dl class="cover-facts">
+              <div><dt>공개 범위</dt><dd>{% if is_full %}전체 {{ total_pages }}쪽{% else %}앞 {{ visible_pages }}쪽{% endif %}</dd></div>
+              <div><dt>형식</dt><dd>{{ format_label }}</dd></div>
+            </dl>
+          </div>
+          {% if cover_url %}
+            <img src="{{ cover_url }}" alt="{{ book.title }} 표지" width="360" height="480">
           {% endif %}
-        </article>
-      {% endfor %}
-
-      {% if not is_full %}
-        <section class="sample-gate" aria-label="미리보기 종료">
-          <p class="gate-kicker">PREVIEW COMPLETE</p>
-          <h2>여기까지 무료로 읽을 수 있어요.</h2>
-          <p>전체 {{ total_pages }}쪽과 구매자 상담 혜택은 운명서재에서 확인할 수 있습니다.</p>
-          {% if purchase_url %}<a href="{{ purchase_url }}">운명서재에서 전체 책 보기</a>{% endif %}
         </section>
-      {% endif %}
+
+        {% for page in pages %}
+          <article class="sample-page reader-leaf{% if page.kind == 'pdf' %} pdf-page{% endif %}" id="page-{{ page.page }}" data-reader-page data-reader-leaf data-reader-label="{{ page.page }}쪽">
+            <header class="page-heading">
+              <p>PAGE {{ "%03d"|format(page.page) }} / {{ "%03d"|format(total_pages) }}</p>
+              <h2>{{ page.title or (page.page ~ '쪽') }}</h2>
+            </header>
+
+            {% if page.kind == 'pdf' %}
+              <img class="pdf-sheet" src="{{ page.image_url }}" alt="{{ page.page }}쪽 원본" loading="{% if loop.index <= 2 %}eager{% else %}lazy{% endif %}" decoding="async">
+            {% else %}
+              <div class="ocr-copy">
+                {% for paragraph in page.paragraphs %}<p>{{ paragraph }}</p>{% endfor %}
+              </div>
+              {% if page.image_url %}
+                <details class="scan-compare">
+                  <summary>원본 스캔과 대조하기</summary>
+                  <img src="{{ page.image_url }}" alt="{{ page.page }}쪽 원본 스캔" loading="lazy" decoding="async">
+                </details>
+              {% endif %}
+            {% endif %}
+          </article>
+        {% endfor %}
+
+        {% if not is_full %}
+          <section class="sample-gate reader-leaf" data-reader-leaf data-reader-label="미리보기 종료" aria-label="미리보기 종료">
+            <p class="gate-kicker">PREVIEW COMPLETE</p>
+            <h2>여기까지 무료로 읽을 수 있어요.</h2>
+            <p>전체 {{ total_pages }}쪽과 구매자 상담 혜택은 운명서재에서 확인할 수 있습니다.</p>
+            {% if purchase_url %}<a href="{{ purchase_url }}">운명서재에서 전체 책 보기</a>{% endif %}
+          </section>
+        {% endif %}
+      </div>
     </main>
   </div>
 
-  <script src="{{ url_for('static', filename='js/public-sample.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/public-sample.js', v=app_version) }}" defer></script>
 </body>
 </html>

@@ -97,6 +97,13 @@ def test_paid_html_sample_only_contains_configured_leading_pages(isolated_librar
     assert "제 2쪽 제목".encode() in response.data
     assert "제 3쪽 제목".encode() not in response.data
     assert "2쪽 무료 미리보기".encode() in response.data
+    assert b'data-book-reader' in response.data
+    assert b'data-reader-leaf' in response.data
+    assert b'data-reader-stage' in response.data
+    assert b'data-reader-prev' in response.data
+    assert b'data-reader-next' in response.data
+    assert b'data-reader-mode-toggle' in response.data
+    assert b'aria-live="polite"' in response.data
 
 
 def test_html_sample_scan_asset_is_limited_by_server_page_range(isolated_library):

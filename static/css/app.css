@@ -1888,6 +1888,54 @@ textarea:focus {
   border-color: rgba(245, 198, 98, .55);
 }
 
+/* Physical book polish: depth follows the pointer without changing layout. */
+.hero-edition {
+  transform: perspective(1200px) rotateX(var(--hero-tilt-x, 0deg)) rotateY(var(--hero-tilt-y, 0deg));
+  transform-style: preserve-3d;
+  transition: transform .45s cubic-bezier(.18,.82,.22,1), box-shadow .45s ease;
+}
+.hero-edition:hover { box-shadow: inset 7px 0 rgba(255,255,255,.035), 0 34px 85px rgba(0,0,0,.34); }
+.hero-edition > p,
+.hero-edition > strong,
+.hero-edition > span,
+.hero-edition > dl { transform: translateZ(16px); }
+
+.cover-frame::after {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  top: 5px;
+  right: 0;
+  bottom: 5px;
+  width: 7px;
+  border-radius: 0 9px 9px 0;
+  background: repeating-linear-gradient(90deg, #d9d1c1 0 1px, #f5f0e6 1px 3px);
+  box-shadow: -3px 0 7px rgba(0,0,0,.16);
+  pointer-events: none;
+}
+.book-card.is-motion-ready .cover-frame {
+  --lift: 0px;
+  transform: perspective(1000px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)) translateY(var(--lift));
+  transform-style: preserve-3d;
+}
+.book-card.is-motion-ready .book-card-link:hover .cover-frame,
+.book-card.is-motion-ready .book-card-link:focus-visible .cover-frame {
+  --lift: -8px;
+  border-color: rgba(73, 211, 196, .48);
+  box-shadow: 13px 28px 52px rgba(0,0,0,.4), inset 6px 0 rgba(255,255,255,.05);
+}
+.book-card.is-motion-ready.is-tilting .cover-frame { transition-duration: .08s; }
+.book-card.is-motion-ready .cover-image,
+.book-card.is-motion-ready .cover-fallback { transform: translateZ(2px); }
+.book-card.is-motion-ready .cover-sheen {
+  opacity: .72;
+  background:
+    radial-gradient(circle at var(--shine-x, 40%) var(--shine-y, 20%), rgba(255,255,255,.32), transparent 24%),
+    linear-gradient(116deg, rgba(255,255,255,.11), transparent 28%, transparent 72%, rgba(255,255,255,.04));
+  transition: opacity .25s ease;
+}
+.book-card.is-motion-ready .book-card-link:hover .cover-sheen { opacity: 1; }
+
 .library-no-results,
 .empty-library {
   min-height: 220px;

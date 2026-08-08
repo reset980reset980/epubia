@@ -14,6 +14,58 @@
     if (image.complete && image.naturalWidth === 0) markMissingCover(image);
   });
 
+  const motionAllowed = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+  if (motionAllowed && finePointer) {
+    document.querySelectorAll("[data-book-card]").forEach((card) => {
+      const link = card.querySelector(".book-card-link");
+      const cover = card.querySelector(".cover-frame");
+      if (!link || !cover) return;
+      card.classList.add("is-motion-ready");
+      let frame = 0;
+
+      link.addEventListener("pointermove", (event) => {
+        window.cancelAnimationFrame(frame);
+        frame = window.requestAnimationFrame(() => {
+          const rect = cover.getBoundingClientRect();
+          const x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+          const y = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
+          cover.style.setProperty("--tilt-x", `${((.5 - y) * 7).toFixed(2)}deg`);
+          cover.style.setProperty("--tilt-y", `${((x - .5) * 9).toFixed(2)}deg`);
+          cover.style.setProperty("--shine-x", `${(x * 100).toFixed(1)}%`);
+          cover.style.setProperty("--shine-y", `${(y * 100).toFixed(1)}%`);
+          card.classList.add("is-tilting");
+        });
+      });
+
+      link.addEventListener("pointerleave", () => {
+        window.cancelAnimationFrame(frame);
+        card.classList.remove("is-tilting");
+        cover.style.removeProperty("--tilt-x");
+        cover.style.removeProperty("--tilt-y");
+        cover.style.removeProperty("--shine-x");
+        cover.style.removeProperty("--shine-y");
+      });
+    });
+
+    const heroEdition = document.querySelector(".hero-edition");
+    const hero = heroEdition?.closest(".library-hero");
+    if (hero && heroEdition) {
+      hero.addEventListener("pointermove", (event) => {
+        const rect = hero.getBoundingClientRect();
+        const x = (event.clientX - rect.left) / rect.width - .5;
+        const y = (event.clientY - rect.top) / rect.height - .5;
+        heroEdition.style.setProperty("--hero-tilt-x", `${(-y * 2.8).toFixed(2)}deg`);
+        heroEdition.style.setProperty("--hero-tilt-y", `${(x * 3.5).toFixed(2)}deg`);
+      });
+      hero.addEventListener("pointerleave", () => {
+        heroEdition.style.removeProperty("--hero-tilt-x");
+        heroEdition.style.removeProperty("--hero-tilt-y");
+      });
+    }
+  }
+
   const publishForm = document.querySelector("[data-publish-form]");
   const fileInput = publishForm && publishForm.querySelector("[data-file-input]");
   const fileName = publishForm && publishForm.querySelector("[data-file-name]");
