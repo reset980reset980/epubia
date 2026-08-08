@@ -9,7 +9,6 @@
   const progress = document.querySelector("[data-reading-progress]");
   const progressFill = progress?.querySelector("span") || progress;
   const links = [...document.querySelectorAll("[data-toc-link]")];
-  const pageArticles = [...document.querySelectorAll("[data-reader-page]")];
   const flow = document.querySelector("[data-reader-flow]");
   const stageShell = document.querySelector("[data-reader-stage]");
   const stage = document.querySelector("[data-book-stage]");
@@ -29,9 +28,12 @@
     index: 0,
     bookMode: true,
     animating: false,
-    turnTimer: 0,
     observer: null,
     drag: null,
+    curl: null,
+    motion: null,
+    frame: 0,
+    lastFrame: 0,
   };
 
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
@@ -101,71 +103,235 @@
     return 0;
   }
 
-  function markActive(index) {
+  function markSpread(index, resetScroll = true) {
+    const leftIndex = index - 1;
     leaves.forEach((leaf, leafIndex) => {
-      const active = leafIndex === index;
+      const onLeft = leafIndex === leftIndex;
+      const onRight = leafIndex === index;
+      const active = onLeft || onRight;
       leaf.classList.toggle("is-active", active);
+      leaf.classList.toggle("is-left-page", onLeft);
+      leaf.classList.toggle("is-right-page", onRight);
       leaf.setAttribute("aria-hidden", String(!active));
       leaf.inert = !active;
-      if (active) leaf.scrollTop = 0;
+      if (active && resetScroll) leaf.scrollTop = 0;
     });
+    stage?.classList.toggle("has-left-page", leftIndex >= 0);
   }
 
-  function sanitizeClone(clone) {
+  function stripCount() {
+    if (window.matchMedia("(max-width: 520px), (pointer: coarse)").matches) return 16;
+    return 22;
+  }
+
+  function visualClone(source, width, height, offsetX) {
+    const clone = source.cloneNode(true);
     clone.classList.remove("is-active");
-    clone.classList.add("turn-sheet");
+    clone.classList.add("curl-face-content");
     clone.removeAttribute("id");
+    clone.removeAttribute("data-reader-leaf");
+    clone.removeAttribute("data-reader-page");
     clone.setAttribute("aria-hidden", "true");
     clone.inert = true;
+    clone.style.width = `${width}px`;
+    clone.style.height = `${height}px`;
+    clone.style.left = `${-offsetX}px`;
     clone.querySelectorAll("[id]").forEach((element) => element.removeAttribute("id"));
+    clone.querySelectorAll("[data-reader-leaf], [data-reader-page]").forEach((element) => {
+      element.removeAttribute("data-reader-leaf");
+      element.removeAttribute("data-reader-page");
+    });
     clone.querySelectorAll("a, button, input, textarea, select, summary, [tabindex]").forEach((element) => {
       element.setAttribute("tabindex", "-1");
       element.setAttribute("aria-hidden", "true");
     });
+    clone.scrollTop = source.scrollTop;
     return clone;
   }
 
-  function removeTurnSheet() {
-    window.clearTimeout(state.turnTimer);
-    stage?.querySelector(".turn-sheet")?.remove();
-    stage?.classList.remove("is-dragging");
+  function buildCurl(direction, targetIndex) {
+    if (!stage) return null;
+    removeCurl();
+
+    const fromIndex = state.index;
+    const turningSource = direction === "forward" ? leaves[fromIndex] : leaves[targetIndex];
+    const rect = stage.getBoundingClientRect();
+    const pageWidth = rect.width / 2;
+    const count = stripCount();
+    const stripWidth = pageWidth / count;
+
+    const shadow = document.createElement("span");
+    shadow.className = `curl-cast-shadow is-${direction}`;
+    shadow.setAttribute("aria-hidden", "true");
+
+    const curl = document.createElement("div");
+    curl.className = `page-curl is-${direction}`;
+    curl.setAttribute("aria-hidden", "true");
+    curl.style.setProperty("--curl-strips", String(count));
+    curl.style.setProperty("--curl-width", `${pageWidth}px`);
+    curl.style.setProperty("--curl-height", `${rect.height}px`);
+
+    const strips = [];
+    let host = curl;
+    for (let index = 0; index < count; index += 1) {
+      const strip = document.createElement("div");
+      strip.className = "curl-strip";
+      strip.style.setProperty("--strip-index", String(index));
+
+      const front = document.createElement("div");
+      front.className = "curl-face curl-front";
+      const back = document.createElement("div");
+      back.className = "curl-face curl-back";
+
+      const sourceOffset = direction === "forward"
+        ? index * stripWidth
+        : pageWidth - (index + 1) * stripWidth;
+      front.appendChild(visualClone(turningSource, pageWidth, rect.height, sourceOffset));
+      back.appendChild(visualClone(turningSource, pageWidth, rect.height, sourceOffset));
+      strip.append(front, back);
+      host.appendChild(strip);
+      host = strip;
+      strips.push(strip);
+    }
+    strips.at(-1)?.classList.add("is-edge");
+
+    markSpread(targetIndex);
+
+    stage.append(shadow, curl);
+    stage.classList.add("is-curling");
+    state.curl = {
+      element: curl,
+      shadow,
+      strips,
+      count,
+      direction,
+      fromIndex,
+      targetIndex,
+      progress: 0,
+    };
+    state.animating = true;
+    applyCurl(0);
+    return state.curl;
+  }
+
+  function applyCurl(progressValue) {
+    const curlState = state.curl;
+    if (!curlState) return;
+    const progressValueSafe = clamp(progressValue, 0, 1);
+    curlState.progress = progressValueSafe;
+
+    // A chain of narrow tangents approximates a flexible sheet. The curve is
+    // flat at both ends and reaches its strongest bend halfway through.
+    const phase = progressValueSafe;
+    const sweep = Math.PI * phase;
+    const bend = 0.62 * Math.sin(Math.PI * phase);
+    const directionSign = curlState.direction === "forward" ? -1 : 1;
+    const rootAngle = directionSign * (sweep + bend) * (180 / Math.PI);
+    const segmentAngle = (2 * bend / curlState.count) * (180 / Math.PI);
+    const shade = Math.sin(Math.PI * phase);
+
+    curlState.element.style.transform = `rotateY(${rootAngle.toFixed(3)}deg)`;
+    curlState.element.style.setProperty("--curl-shade", shade.toFixed(3));
+    curlState.element.style.setProperty("--curl-step", `${segmentAngle.toFixed(4)}deg`);
+    curlState.shadow.style.opacity = (shade * .72).toFixed(3);
+    curlState.shadow.style.transform = `scaleX(${(.2 + shade * .8).toFixed(3)})`;
+
+    curlState.strips.forEach((strip, index) => {
+      const nearLight = Math.abs(Math.cos((sweep + bend) - index * (2 * bend / curlState.count)));
+      const farLight = Math.abs(Math.cos((sweep + bend) - (index + 1) * (2 * bend / curlState.count)));
+      strip.style.setProperty("--curl-light", nearLight.toFixed(3));
+      strip.style.setProperty("--curl-a-near", ((1 - nearLight) * .5).toFixed(3));
+      strip.style.setProperty("--curl-a-far", ((1 - farLight) * .5).toFixed(3));
+    });
+  }
+
+  function stopMotion() {
+    if (state.frame) window.cancelAnimationFrame(state.frame);
+    state.frame = 0;
+    state.motion = null;
+  }
+
+  function removeCurl() {
+    stopMotion();
+    stage?.querySelector(".page-curl")?.remove();
+    stage?.querySelector(".curl-cast-shadow")?.remove();
+    stage?.classList.remove("is-curling", "is-dragging");
+    state.curl = null;
     state.animating = false;
     state.drag = null;
   }
 
   function finishTurn(targetIndex, announce = true) {
-    removeTurnSheet();
+    removeCurl();
     state.index = clamp(targetIndex, 0, leaves.length - 1);
-    markActive(state.index);
+    markSpread(state.index);
     updateControls();
     replaceLocation();
-    if (announce) setStatus(`${leafLabel(state.index)}을 펼쳤습니다.`);
+    if (announce) setStatus(`${leafLabel(state.index)} 페이지를 펼쳤습니다.`);
     turnHint?.classList.add("is-dismissed");
+  }
+
+  function restoreTurn(fromIndex) {
+    removeCurl();
+    state.index = fromIndex;
+    markSpread(state.index, false);
+    updateControls();
+    setStatus(`${leafLabel(state.index)}에 머물렀습니다.`);
+  }
+
+  function motionFrame(now) {
+    state.frame = 0;
+    if (!state.motion || !state.curl) return;
+    const motion = state.motion;
+    const delta = Math.min(.032, (now - state.lastFrame) / 1000 || .016);
+    state.lastFrame = now;
+    const distance = state.curl.progress - motion.target;
+    motion.velocity += (-motion.stiffness * distance - motion.damping * motion.velocity) * delta;
+    const next = state.curl.progress + motion.velocity * delta;
+    const crossedTarget = (motion.target === 0 && next <= 0) || (motion.target === 1 && next >= 1);
+    if (crossedTarget) {
+      applyCurl(motion.target);
+      const done = motion.done;
+      state.motion = null;
+      done?.();
+      return;
+    }
+    applyCurl(next);
+
+    if (Math.abs(state.curl.progress - motion.target) < .002 && Math.abs(motion.velocity) < .025) {
+      applyCurl(motion.target);
+      const done = motion.done;
+      state.motion = null;
+      done?.();
+      return;
+    }
+    state.frame = window.requestAnimationFrame(motionFrame);
+  }
+
+  function springTo(target, done, velocity = 0) {
+    if (!state.curl) return;
+    if (reducedMotion.matches) {
+      applyCurl(target);
+      done?.();
+      return;
+    }
+    stopMotion();
+    state.motion = {
+      target,
+      velocity,
+      stiffness: 180,
+      damping: 24,
+      done,
+    };
+    state.lastFrame = performance.now();
+    state.frame = window.requestAnimationFrame(motionFrame);
   }
 
   function animateTurn(targetIndex, direction) {
     if (!stage || state.animating || targetIndex === state.index || targetIndex < 0 || targetIndex >= leaves.length) return;
-    const fromIndex = state.index;
-    const source = direction === "forward" ? leaves[fromIndex] : leaves[targetIndex];
-    const ghost = sanitizeClone(source.cloneNode(true));
-    ghost.classList.add(direction === "forward" ? "is-forward" : "is-backward");
-    ghost.style.setProperty("--turn-progress", "0");
-
-    state.animating = true;
-    if (direction === "forward") markActive(targetIndex);
-    else markActive(fromIndex);
-    stage.appendChild(ghost);
-
-    if (reducedMotion.matches) {
-      finishTurn(targetIndex);
-      return;
-    }
-
-    window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => ghost.style.setProperty("--turn-progress", "1"));
-    });
-    ghost.addEventListener("transitionend", () => finishTurn(targetIndex), { once: true });
-    state.turnTimer = window.setTimeout(() => finishTurn(targetIndex), 850);
+    const curlState = buildCurl(direction, targetIndex);
+    if (!curlState) return;
+    springTo(1, () => finishTurn(targetIndex));
   }
 
   function goTo(index, options = {}) {
@@ -206,29 +372,36 @@
 
   function enterBookMode() {
     if (!stage || !stageShell || !flow || !leaves.length) return;
-    removeTurnSheet();
+    removeCurl();
     state.bookMode = true;
+    let blankPage = stage.querySelector(".book-blank-page");
+    if (!blankPage) {
+      blankPage = document.createElement("span");
+      blankPage.className = "book-blank-page";
+      blankPage.setAttribute("aria-hidden", "true");
+      stage.prepend(blankPage);
+    }
     leaves.forEach((leaf) => stage.appendChild(leaf));
     stage.appendChild(stage.querySelector(".book-spine") || document.createElement("span"));
     stageShell.hidden = false;
     body.classList.add("reader-book-mode");
     body.classList.remove("reader-scroll-mode");
-    markActive(state.index);
+    markSpread(state.index);
     modeToggle?.setAttribute("aria-pressed", "true");
     modeToggle?.setAttribute("aria-label", "연속 스크롤 읽기로 전환");
     if (modeLabel) modeLabel.textContent = "연속 읽기";
     updateControls();
     replaceLocation();
     state.observer?.disconnect();
-    setStatus(`${leafLabel(state.index)}. 책 넘김 방식으로 읽습니다.`);
+    setStatus(`${leafLabel(state.index)}. 곡면 책 넘김 방식으로 읽습니다.`);
   }
 
   function enterScrollMode() {
     if (!stageShell || !flow) return;
-    removeTurnSheet();
+    removeCurl();
     state.bookMode = false;
     leaves.forEach((leaf) => {
-      leaf.classList.remove("is-active");
+      leaf.classList.remove("is-active", "is-left-page", "is-right-page");
       leaf.removeAttribute("aria-hidden");
       leaf.inert = false;
       flow.appendChild(leaf);
@@ -267,30 +440,24 @@
       startY: event.clientY,
       lastX: event.clientX,
       lastTime: performance.now(),
+      lastProgress: 0,
       velocity: 0,
       direction,
       targetIndex,
       progress: 0,
-      ghost: null,
       started: false,
+      moved: 0,
     };
     stage.setPointerCapture?.(event.pointerId);
   }
 
   function setupDragVisual(drag) {
     if (!stage) return;
-    const source = drag.direction === "forward" ? leaves[state.index] : leaves[drag.targetIndex];
-    const ghost = sanitizeClone(source.cloneNode(true));
-    ghost.classList.add(drag.direction === "forward" ? "is-forward" : "is-backward");
-    ghost.style.transition = "none";
-    ghost.style.setProperty("--turn-progress", "0");
-    if (drag.direction === "forward") markActive(drag.targetIndex);
-    else markActive(state.index);
-    stage.appendChild(ghost);
+    const curlState = buildCurl(drag.direction, drag.targetIndex);
+    if (!curlState) return;
     stage.classList.add("is-dragging");
-    drag.ghost = ghost;
     drag.started = true;
-    state.animating = true;
+    state.drag = drag;
   }
 
   function moveDrag(event) {
@@ -299,56 +466,45 @@
     const deltaX = event.clientX - drag.startX;
     const deltaY = event.clientY - drag.startY;
     const intended = drag.direction === "forward" ? -deltaX : deltaX;
+    drag.moved = Math.max(drag.moved, Math.abs(deltaX));
+
     if (!drag.started) {
       if (Math.abs(deltaY) > Math.abs(deltaX) * 1.2 && Math.abs(deltaY) > 10) {
+        stage.releasePointerCapture?.(event.pointerId);
         state.drag = null;
         return;
       }
-      if (intended < 8) return;
+      if (intended < 7) return;
       setupDragVisual(drag);
     }
-    if (!drag.ghost) return;
+    if (!state.curl) return;
+
     event.preventDefault();
     const now = performance.now();
-    const dt = Math.max(1, now - drag.lastTime);
-    const dx = event.clientX - drag.lastX;
-    drag.velocity = (drag.direction === "forward" ? -dx : dx) / dt;
+    const elapsed = Math.max(.001, (now - drag.lastTime) / 1000);
+    drag.progress = clamp(intended / (stage.clientWidth * .31), 0, 1);
+    drag.velocity = (drag.progress - drag.lastProgress) / elapsed;
+    drag.lastProgress = drag.progress;
     drag.lastX = event.clientX;
     drag.lastTime = now;
-    drag.progress = clamp(intended / (stage.clientWidth * .78), 0, 1);
-    const eased = 1 - Math.pow(1 - drag.progress, 1.18);
-    drag.ghost.style.setProperty("--turn-progress", String(eased));
+    applyCurl(drag.progress);
   }
 
   function endDrag(event) {
     const drag = state.drag;
     if (!drag || drag.pointerId !== event.pointerId) return;
     stage?.releasePointerCapture?.(event.pointerId);
-    if (!drag.started || !drag.ghost) {
+
+    if (!drag.started || !state.curl) {
       state.drag = null;
+      if (event.type !== "pointercancel" && drag.moved < 6) goTo(drag.targetIndex, { direction: drag.direction });
       return;
     }
-    const shouldCommit = drag.progress > .24 || (drag.progress > .08 && drag.velocity > .45);
-    const ghost = drag.ghost;
-    ghost.style.transition = "";
-    ghost.classList.add("is-settling");
-    ghost.getBoundingClientRect();
-    ghost.style.setProperty("--turn-progress", shouldCommit ? "1" : "0");
 
-    const complete = () => {
-      if (shouldCommit) finishTurn(drag.targetIndex);
-      else {
-        removeTurnSheet();
-        markActive(state.index);
-        updateControls();
-        setStatus(`${leafLabel(state.index)}에 머물렀습니다.`);
-      }
-    };
-    if (reducedMotion.matches) complete();
-    else {
-      ghost.addEventListener("transitionend", complete, { once: true });
-      state.turnTimer = window.setTimeout(complete, 520);
-    }
+    state.drag = null;
+    const shouldCommit = event.type !== "pointercancel" && (drag.progress > .42 || drag.velocity > 1.1);
+    if (shouldCommit) springTo(1, () => finishTurn(drag.targetIndex), Math.max(0, drag.velocity));
+    else springTo(0, () => restoreTurn(state.curl?.fromIndex ?? state.index), Math.min(0, drag.velocity));
   }
 
   modeToggle?.addEventListener("click", toggleMode);
@@ -389,9 +545,13 @@
   stage?.addEventListener("pointermove", moveDrag, { passive: false });
   stage?.addEventListener("pointerup", endDrag);
   stage?.addEventListener("pointercancel", endDrag);
+  stage?.addEventListener("dragstart", (event) => event.preventDefault());
 
   window.addEventListener("scroll", updateScrollProgress, { passive: true });
-  window.addEventListener("resize", updateScrollProgress, { passive: true });
+  window.addEventListener("resize", () => {
+    updateScrollProgress();
+    if (state.curl) restoreTurn(state.curl.fromIndex);
+  }, { passive: true });
 
   if (!stage || !stageShell || !flow || leaves.length < 2) {
     body.classList.add("reader-scroll-mode");

@@ -100,6 +100,7 @@ def test_paid_html_sample_only_contains_configured_leading_pages(isolated_librar
     assert b'data-book-reader' in response.data
     assert b'data-reader-leaf' in response.data
     assert b'data-reader-stage' in response.data
+    assert b'data-curl-model="nested-strips"' in response.data
     assert b'data-reader-prev' in response.data
     assert b'data-reader-next' in response.data
     assert b'data-reader-mode-toggle' in response.data
