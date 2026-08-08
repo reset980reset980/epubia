@@ -24,7 +24,7 @@ PDF, TXT, Markdown 원고는 EPUB 3·PDF·Markdown으로, 완성된 HTML 전자�
 
 ## 개발 기록
 
-- [2026-08-08 · EPUBIA 1.5.0 책 넘김 리더](docs/2026-08-08-page-turn-reader.md)
+- [2026-08-08 · EPUBIA 1.5.1 책 넘김 리더](docs/2026-08-08-page-turn-reader.md)
 - [2026-07-11 · EPUBIA 1.4.1 출판·공개 서재·운명서재 연계](docs/2026-07-11-development-log.md)
 
 ## 실행

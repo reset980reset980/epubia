@@ -42,7 +42,24 @@ img { max-width: 100%; }
   transform: translateY(-150%);
 }
 .skip-link:focus { transform: none; }
-.reading-progress { position: fixed; z-index: 90; inset: 0 auto auto 0; width: 0; height: 3px; background: var(--brass); }
+.reading-progress {
+  position: fixed;
+  z-index: 90;
+  inset: 0 0 auto;
+  width: 100%;
+  height: 3px;
+  overflow: hidden;
+  background: rgba(255,255,255,.08);
+  pointer-events: none;
+}
+.reading-progress span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--brass), #f2d58f);
+  box-shadow: 0 0 10px rgba(213,193,141,.45);
+  transition: width .22s ease-out;
+}
 
 .reader-bar {
   position: sticky;
@@ -150,7 +167,8 @@ img { max-width: 100%; }
   .sample-toc,
   .turn-sheet,
   .page-edge,
-  .book-navigation button { transition: none !important; }
+  .book-navigation button,
+  .reading-progress span { transition: none !important; }
   .turn-hint { display: none; }
 }
 
